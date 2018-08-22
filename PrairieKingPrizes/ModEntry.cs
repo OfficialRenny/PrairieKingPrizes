@@ -19,10 +19,12 @@ namespace PrairieKingPrizes
         int coinsCollected;
         int totalTokens;
         private object LastMinigame;
+        bool isNPCLoaded = false;
         int basicItemID = 444;
         int premiumItemID = 445;
         int cancelID = 446;
-        
+        NPC tokenNPC { get; set; }
+
 
         //[DeluxeGrabber] Map: Saloon
         //[DeluxeGrabber] Tile: {X:36 Y:17}
@@ -30,13 +32,21 @@ namespace PrairieKingPrizes
 
         public override void Entry(IModHelper helper)
         {
-            var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-            totalTokens = savedData.totalTokens;
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
+            helper.ConsoleCommands.Add("addtokens", "Gives you tokens. Usage: addtokens <amount>", this.AddCoins);
         }
 
+        private void AddCoins(string command, string[] args)
+        {
+            if(args.Length > 1)
+            {
+                return;
+            }
+            totalTokens += Convert.ToInt32(args[1]);
+
+        }
 
         public bool CanEdit<T>(IAssetInfo asset)
         {
@@ -130,17 +140,20 @@ namespace PrairieKingPrizes
 
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
+            var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+            totalTokens = savedData.totalTokens;
+
             Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
 
             NPC tokenNPC = new NPC(null, new Vector2(36f, 17f), "Saloon", 3, "TokenMachine", false, null, portrait);
-            Monitor.Log("Created Token Machine NPC.");
 
-            //Game1.getLocationFromName("Saloon").addCharacter(tokenNPC);
+            Monitor.Log("Created Token Machine NPC.");
             Monitor.Log($"The token machine should have spawned at {tokenNPC.Position.X},{tokenNPC.Position.Y}");
 
-            foreach(int i in Game1.player.dialogueQuestionsAnswered)
+
+            foreach (int i in Game1.player.dialogueQuestionsAnswered)
             {
-                if(i == basicItemID)
+                if (i == basicItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
                 }
@@ -158,6 +171,8 @@ namespace PrairieKingPrizes
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
         {
+            bool needToUpdateSavedData = false;
+
             if (Game1.currentMinigame != null && "AbigailGame".Equals(Game1.currentMinigame.GetType().Name))
             {
                 Type minigameType = Game1.currentMinigame.GetType();
@@ -165,14 +180,19 @@ namespace PrairieKingPrizes
                 LastMinigame = Game1.currentMinigame.GetType().Name;
             }
 
-            if(Game1.currentMinigame == null && "AbigailGame".Equals(LastMinigame))
+            if (Game1.currentMinigame == null && "AbigailGame".Equals(LastMinigame))
             {
                 totalTokens += coinsCollected;
-                coinsCollected = 0;
-                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.totalTokens = totalTokens;
+                needToUpdateSavedData = true;
             }
 
+            if (needToUpdateSavedData)
+            {
+                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+                savedData.totalTokens = totalTokens;
+                needToUpdateSavedData = false;
+                coinsCollected = 0;
+            }
 
 
             foreach (int i in Game1.player.dialogueQuestionsAnswered)
@@ -181,18 +201,21 @@ namespace PrairieKingPrizes
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
                     givePlayerBasicItem();
-
+                    tokenNPC.resetCurrentDialogue();
                 }
                 if (i == premiumItemID)
                 {
-                    Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
+                    Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
                     givePlayerPremiumItem();
+                    tokenNPC.resetCurrentDialogue();
 
                 }
                 if (i == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
                     return;
+                    tokenNPC.resetCurrentDialogue();
+
                 }
             }
         }
@@ -206,54 +229,63 @@ namespace PrairieKingPrizes
             int[] coveted = { 499, 486, 347, 163, 166, 107 };
             int[] legendary = { 74 };
 
-            if (Game1.player.isInventoryFull() == true)
-            {
-                return;
-            }
+
 
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
-            if(diceRoll <= 0.01)
+            if (totalTokens >= 10)
             {
-                //give legendary item
-                this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
-                Game1.player.Items.Add((Item)new Object(74, 1, false, -1, 0));
-                return this.TryCreate(itemType.Object, 74, () => new Object(74));
 
-                
+                if (diceRoll <= 0.01)
+                {
+                    //give legendary item
+                    this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(74, 1, false, -1, 0));
+
+
+                }
+                if (diceRoll > 0.01 && diceRoll <= 0.1)
+                {
+                    //give coveted item
+                    Random rnd = new Random();
+                    int r = rnd.Next(coveted.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(coveted[r], 1, false, -1, 0));
+                }
+                if (diceRoll > 0.1 && diceRoll <= 0.3)
+                {
+                    //give rare item
+                    Random rnd = new Random();
+                    int r = rnd.Next(rare.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 1, false, -1, 0));
+                }
+                if (diceRoll > 0.3 && diceRoll <= 0.6)
+                {
+                    //give uncommon item
+                    Random rnd = new Random();
+                    int r = rnd.Next(uncommon.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 1, false, -1, 0));
+                }
+                if (diceRoll > 0.6 && diceRoll <= 1)
+                {
+                    //give common item
+                    Random rnd = new Random();
+                    int r = rnd.Next(common.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 1, false, -1, 0));
+                }
+                totalTokens -= 10;
+                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+                savedData.totalTokens = totalTokens;
             }
-            if(diceRoll > 0.01 && diceRoll <= 0.1)
+            else
             {
-                //give coveted item
-                Random rnd = new Random();
-                int r = rnd.Next(coveted.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(coveted[r], 2, false, -1, 0));
-            }
-            if(diceRoll > 0.1 && diceRoll <= 0.3)
-            {
-                //give rare item
-                Random rnd = new Random();
-                int r = rnd.Next(rare.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(rare[r], 3, false, -1, 0));
-            }
-            if(diceRoll > 0.3 && diceRoll <= 0.6)
-            {
-                //give uncommon item
-                Random rnd = new Random();
-                int r = rnd.Next(uncommon.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(uncommon[r], 10, false, -1, 0));
-            }
-            if(diceRoll > 0.6 && diceRoll <= 1)
-            {
-                //give common item
-                Random rnd = new Random();
-                int r = rnd.Next(common.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(common[r], 15, false, -1, 0));
+                Game1.addHUDMessage(new HUDMessage($"You do not have enough Tokens.", 3));
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
+                return;
             }
 
         }
@@ -271,45 +303,56 @@ namespace PrairieKingPrizes
             }
             Random random = new Random();
             double diceRoll = random.NextDouble();
-            if (diceRoll <= 0.05)
-            {
-                //give legendary premium item
-                this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(74, 2, false, -1, 0));
-            }
-            if (diceRoll > 0.05 && diceRoll <= 0.25)
-            {
-                //give coveted premium item
-                Random rnd = new Random();
-                int r = rnd.Next(coveted.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(coveted[r], 5, false, -1, 0));
-            }
-            if (diceRoll > 0.25 && diceRoll <= 0.45)
-            {
-                //give rare premium item
-                Random rnd = new Random();
-                int r = rnd.Next(rare.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(rare[r], 10, false, -1, 0));
-            }
-            if (diceRoll > 0.45 && diceRoll <= 0.8)
-            {
-                //give uncommon premium item
-                Random rnd = new Random();
-                int r = rnd.Next(uncommon.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(uncommon[r], 15, false, -1, 0));
-            }
-            if (diceRoll > 0.8 && diceRoll <= 1)
-            {
-                //give common premium item
-                Random rnd = new Random();
-                int r = rnd.Next(common.Length);
-                this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
-                Game1.player.Items.Add((Item)new StardewValley.Object(common[r], 25, false, -1 , 0));
-            }
 
+            if (totalTokens >= 50)
+            {
+                if (diceRoll <= 0.05)
+                {
+                    //give legendary premium item
+                    this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(74, 2, false, -1, 0));
+                }
+                if (diceRoll > 0.05 && diceRoll <= 0.25)
+                {
+                    //give coveted premium item
+                    Random rnd = new Random();
+                    int r = rnd.Next(coveted.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(coveted[r], 5, false, -1, 0));
+                }
+                if (diceRoll > 0.25 && diceRoll <= 0.45)
+                {
+                    //give rare premium item
+                    Random rnd = new Random();
+                    int r = rnd.Next(rare.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 10, false, -1, 0));
+                }
+                if (diceRoll > 0.45 && diceRoll <= 0.8)
+                {
+                    //give uncommon premium item
+                    Random rnd = new Random();
+                    int r = rnd.Next(uncommon.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 15, false, -1, 0));
+                }
+                if (diceRoll > 0.8 && diceRoll <= 1)
+                {
+                    //give common premium item
+                    Random rnd = new Random();
+                    int r = rnd.Next(common.Length);
+                    this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 25, false, -1, 0));
+                }
+                totalTokens -= 50;
+                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+                savedData.totalTokens = totalTokens;
+            } else
+            {
+                Game1.addHUDMessage(new HUDMessage($"You do not have enough Tokens.", 3));
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
+                return;
+            }
         }
     }
 
