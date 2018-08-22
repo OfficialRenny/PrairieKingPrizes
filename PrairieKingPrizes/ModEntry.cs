@@ -20,9 +20,6 @@ namespace PrairieKingPrizes
         int totalTokens;
         private object LastMinigame;
         bool isNPCLoaded = false;
-        int basicItemID = 444;
-        int premiumItemID = 445;
-        int cancelID = 446;
         NPC tokenNPC { get; set; }
 
 
@@ -35,17 +32,6 @@ namespace PrairieKingPrizes
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
-            helper.ConsoleCommands.Add("addtokens", "Gives you tokens. Usage: addtokens <amount>", this.AddCoins);
-        }
-
-        private void AddCoins(string command, string[] args)
-        {
-            if(args.Length > 1)
-            {
-                return;
-            }
-            totalTokens += Convert.ToInt32(args[1]);
-
         }
 
         public bool CanEdit<T>(IAssetInfo asset)
@@ -150,20 +136,28 @@ namespace PrairieKingPrizes
             Monitor.Log("Created Token Machine NPC.");
             Monitor.Log($"The token machine should have spawned at {tokenNPC.Position.X},{tokenNPC.Position.Y}");
 
+            int basicItemID = 444;
+            int premiumItemID = 445;
+            int cancelID = 446;
 
-            foreach (int i in Game1.player.dialogueQuestionsAnswered)
+            foreach (int num in Game1.player.dialogueQuestionsAnswered)
             {
-                if (i == basicItemID)
+                if (num == basicItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
+                    this.Monitor.Log($"{basicItemID}/basicItemID was a valid dialogue answer and has been removed.");
                 }
-                if (i == premiumItemID)
+                if (num == premiumItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
+                    this.Monitor.Log($"{premiumItemID}/premiumItemID was a valid dialogue answer and has been removed.");
+
                 }
-                if (i == cancelID)
+                if (num == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
+                    this.Monitor.Log($"{cancelID}/cancelID was a valid dialogue answer and has been removed.");
+
                 }
             }
 
@@ -186,6 +180,7 @@ namespace PrairieKingPrizes
                 needToUpdateSavedData = true;
             }
 
+
             if (needToUpdateSavedData)
             {
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
@@ -195,25 +190,28 @@ namespace PrairieKingPrizes
             }
 
 
-            foreach (int i in Game1.player.dialogueQuestionsAnswered)
-            {
-                if (i == basicItemID)
-                {
-                    Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
-                    givePlayerBasicItem();
-                    tokenNPC.resetCurrentDialogue();
-                }
-                if (i == premiumItemID)
-                {
-                    Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
-                    givePlayerPremiumItem();
-                    tokenNPC.resetCurrentDialogue();
+            int basicItemID = 444;
+            int premiumItemID = 445;
+            int cancelID = 446;
 
+            foreach (int num in Game1.player.dialogueQuestionsAnswered)
+            {
+                if (num == basicItemID)
+                {
+                    givePlayerBasicItem();
+                    Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
+                    this.Monitor.Log($"{basicItemID}/basicItemID was a valid dialogue answer and has been removed.");
                 }
-                if (i == cancelID)
+                if (num == premiumItemID)
+                {
+                    givePlayerPremiumItem();
+                    Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
+                    this.Monitor.Log($"{premiumItemID}/premiumItemID was a valid dialogue answer and has been removed.");
+                }
+                if (num == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
-                    tokenNPC.resetCurrentDialogue();
+                    this.Monitor.Log($"{cancelID}/cancelID was a valid dialogue answer and has been removed.");
                     return;
                 }
             }
