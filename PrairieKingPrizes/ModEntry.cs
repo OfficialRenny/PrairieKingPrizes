@@ -9,17 +9,23 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Minigames;
+using StardewValley.Objects;
+using SObject = StardewValley.Object;
 
 namespace PrairieKingPrizes
 {
-    public class ModEntry : Mod
+    public class ModEntry : Mod, IAssetEditor, IAssetLoader
     {
         int coinsCollected;
         int totalTokens;
         private object LastMinigame;
+        int basicItemID = 444;
+        int premiumItemID = 445;
+        int cancelID = 446;
+        
 
         //[DeluxeGrabber] Map: Saloon
-        //[DeluxeGrabber] Tile: {X:34 Y:17}
+        //[DeluxeGrabber] Tile: {X:36 Y:17}
         //It's a Surprise Tool That Will Help Us Later
 
         public override void Entry(IModHelper helper)
@@ -28,8 +34,9 @@ namespace PrairieKingPrizes
             totalTokens = savedData.totalTokens;
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
-            helper.ConsoleCommands.Add("getcoins", "Retrieves the value of your current amount of coins.", this.GetCoins);
+            helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
         }
+
 
         public bool CanEdit<T>(IAssetInfo asset)
         {
@@ -49,40 +56,40 @@ namespace PrairieKingPrizes
         {
             if (asset.AssetNameEquals("Data/NPCDispositions"))
             {
-                asset.AsDictionary<string, string>().Data["Token Machine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon 34 17/Token Machine";
+                asset.AsDictionary<string, string>().Data["TokenMachine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon 34 17/Token Machine";
             }
 
             if (asset.AssetNameEquals("Data/NPCGiftTastes"))
             {
                 IDictionary<string, string> NPCGiftTastes = asset.AsDictionary<string, string>().Data;
-                NPCGiftTastes["Token Machine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
+                NPCGiftTastes["TokenMachine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
             }
 
             if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
             {
                 IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
-                rainy["Token Machine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
+                rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
             }
         }
 
         public bool CanLoad<T>(IAssetInfo asset)
         {
-            if (asset.AssetNameEquals("Characters/Dialogue/Token Machine"))
+            if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
             {
                 return true;
             }
 
-            if (asset.AssetNameEquals("Characters/Token Machine"))
+            if (asset.AssetNameEquals("Characters/TokenMachine"))
             {
                 return true;
             }
 
-            if (asset.AssetNameEquals("Portraits/Token Machine"))
+            if (asset.AssetNameEquals("Portraits/TokenMachine"))
             {
                 return true;
             }
 
-            if (asset.AssetNameEquals("Characters/Schedules/Token Machine"))
+            if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
             {
                 return true;
             }
@@ -92,22 +99,22 @@ namespace PrairieKingPrizes
 
         public T Load<T>(IAssetInfo asset)
         {
-            if (asset.AssetNameEquals("Characters/Dialogue/Token Machine"))
+            if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
             {
                 return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
             }
 
-            if (asset.AssetNameEquals("Characters/Schedules/Token Machine"))
+            if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
             {
                 return Helper.Content.Load<T>("assets/tokenSchedule.xnb", ContentSource.ModFolder);
             }
 
-            if (asset.AssetNameEquals("Characters/Token Machine"))
+            if (asset.AssetNameEquals("Characters/TokenMachine"))
             {
                 return Helper.Content.Load<T>("assets/tokenMachine.png", ContentSource.ModFolder);
             }
 
-            if (asset.AssetNameEquals("Portraits/Token Machine"))
+            if (asset.AssetNameEquals("Portraits/TokenMachine"))
             {
                 return Helper.Content.Load<T>("assets/portrait.png", ContentSource.ModFolder);
             }
@@ -124,10 +131,29 @@ namespace PrairieKingPrizes
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
             Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
-            NPC tokenNPC = new NPC(null, new Vector2(34, 17), "Saloon", 3, "Token Machine", false, null, portrait);
+
+            NPC tokenNPC = new NPC(null, new Vector2(36f, 17f), "Saloon", 3, "TokenMachine", false, null, portrait);
             Monitor.Log("Created Token Machine NPC.");
-            Game1.getLocationFromName("Saloon").addCharacter(tokenNPC);
+
+            //Game1.getLocationFromName("Saloon").addCharacter(tokenNPC);
             Monitor.Log($"The token machine should have spawned at {tokenNPC.Position.X},{tokenNPC.Position.Y}");
+
+            foreach(int i in Game1.player.dialogueQuestionsAnswered)
+            {
+                if(i == basicItemID)
+                {
+                    Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
+                }
+                if (i == premiumItemID)
+                {
+                    Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
+                }
+                if (i == cancelID)
+                {
+                    Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
+                }
+            }
+
         }
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
@@ -147,29 +173,30 @@ namespace PrairieKingPrizes
                 savedData.totalTokens = totalTokens;
             }
 
-            int basicItemID = 1101;
-            int premiumItemID = 1102;
-            int cancelID = 1103;
 
-            foreach(int i in Game1.player.dialogueQuestionsAnswered)
+
+            foreach (int i in Game1.player.dialogueQuestionsAnswered)
             {
-                if(i == basicItemID)
+                if (i == basicItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
                     givePlayerBasicItem();
+
                 }
-                if(i == premiumItemID)
+                if (i == premiumItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
                     givePlayerPremiumItem();
+
                 }
-                if(i == cancelID)
+                if (i == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
                     return;
                 }
             }
         }
+
 
         private void givePlayerBasicItem()
         {
@@ -190,35 +217,43 @@ namespace PrairieKingPrizes
             if(diceRoll <= 0.01)
             {
                 //give legendary item
-                Game1.player.items.Add((Item)new StardewValley.Object(74, 1));
+                this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                Game1.player.Items.Add((Item)new Object(74, 1, false, -1, 0));
+                return this.TryCreate(itemType.Object, 74, () => new Object(74));
+
+                
             }
             if(diceRoll > 0.01 && diceRoll <= 0.1)
             {
                 //give coveted item
                 Random rnd = new Random();
                 int r = rnd.Next(coveted.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 2));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(coveted[r], 2, false, -1, 0));
             }
             if(diceRoll > 0.1 && diceRoll <= 0.3)
             {
                 //give rare item
                 Random rnd = new Random();
                 int r = rnd.Next(rare.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 3));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(rare[r], 3, false, -1, 0));
             }
             if(diceRoll > 0.3 && diceRoll <= 0.6)
             {
                 //give uncommon item
                 Random rnd = new Random();
                 int r = rnd.Next(uncommon.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 10));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(uncommon[r], 10, false, -1, 0));
             }
             if(diceRoll > 0.6 && diceRoll <= 1)
             {
                 //give common item
                 Random rnd = new Random();
                 int r = rnd.Next(common.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 15));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(common[r], 15, false, -1, 0));
             }
 
         }
@@ -239,35 +274,40 @@ namespace PrairieKingPrizes
             if (diceRoll <= 0.05)
             {
                 //give legendary premium item
-                Game1.player.items.Add((Item)new StardewValley.Object(74, 2));
+                this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(74, 2, false, -1, 0));
             }
             if (diceRoll > 0.05 && diceRoll <= 0.25)
             {
                 //give coveted premium item
                 Random rnd = new Random();
                 int r = rnd.Next(coveted.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 5));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(coveted[r], 5, false, -1, 0));
             }
             if (diceRoll > 0.25 && diceRoll <= 0.45)
             {
                 //give rare premium item
                 Random rnd = new Random();
                 int r = rnd.Next(rare.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 10));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(rare[r], 10, false, -1, 0));
             }
             if (diceRoll > 0.45 && diceRoll <= 0.8)
             {
                 //give uncommon premium item
                 Random rnd = new Random();
                 int r = rnd.Next(uncommon.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 15));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(uncommon[r], 15, false, -1, 0));
             }
             if (diceRoll > 0.8 && diceRoll <= 1)
             {
                 //give common premium item
                 Random rnd = new Random();
                 int r = rnd.Next(common.Length);
-                Game1.player.items.Add((Item)new StardewValley.Object(r, 25));
+                this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                Game1.player.Items.Add((Item)new StardewValley.Object(common[r], 25, false, -1 , 0));
             }
 
         }
