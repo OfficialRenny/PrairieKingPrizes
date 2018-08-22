@@ -213,9 +213,8 @@ namespace PrairieKingPrizes
                 if (i == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
-                    return;
                     tokenNPC.resetCurrentDialogue();
-
+                    return;
                 }
             }
         }
