@@ -1,27 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Minigames;
-using StardewValley.Objects;
-using SObject = StardewValley.Object;
+using System;
+using System.Collections.Generic;
 
 namespace PrairieKingPrizes
 {
     public class ModEntry : Mod, IAssetEditor, IAssetLoader
     {
-        int coinsCollected;
-        int totalTokens;
+        private int coinsCollected;
+        private int totalTokens;
         private object LastMinigame;
-        bool isNPCLoaded = false;
-        NPC tokenNPC { get; set; }
-
+        private bool isNPCLoaded = false;
+        private NPC tokenNPC { get; set; }
 
         //[DeluxeGrabber] Map: Saloon
         //[DeluxeGrabber] Tile: {X:36 Y:17}
@@ -123,7 +116,6 @@ namespace PrairieKingPrizes
             this.Monitor.Log($"You currently have {totalTokens} coins.");
         }
 
-
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
             var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
@@ -151,16 +143,13 @@ namespace PrairieKingPrizes
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
                     this.Monitor.Log($"{premiumItemID}/premiumItemID was a valid dialogue answer and has been removed.");
-
                 }
                 if (num == cancelID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
                     this.Monitor.Log($"{cancelID}/cancelID was a valid dialogue answer and has been removed.");
-
                 }
             }
-
         }
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
@@ -180,7 +169,6 @@ namespace PrairieKingPrizes
                 needToUpdateSavedData = true;
             }
 
-
             if (needToUpdateSavedData)
             {
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
@@ -188,7 +176,6 @@ namespace PrairieKingPrizes
                 needToUpdateSavedData = false;
                 coinsCollected = 0;
             }
-
 
             int basicItemID = 444;
             int premiumItemID = 445;
@@ -217,7 +204,6 @@ namespace PrairieKingPrizes
             }
         }
 
-
         private void givePlayerBasicItem()
         {
             int[] common = { 495, 496, 497, 498 };
@@ -226,21 +212,16 @@ namespace PrairieKingPrizes
             int[] coveted = { 499, 486, 347, 163, 166, 107 };
             int[] legendary = { 74 };
 
-
-
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
             if (totalTokens >= 10)
             {
-
                 if (diceRoll <= 0.01)
                 {
                     //give legendary item
                     this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(74, 1, false, -1, 0));
-
-
                 }
                 if (diceRoll > 0.01 && diceRoll <= 0.1)
                 {
@@ -284,8 +265,8 @@ namespace PrairieKingPrizes
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
                 return;
             }
-
         }
+
         private void givePlayerPremiumItem()
         {
             int[] common = { 495, 496, 497, 498 };
@@ -294,10 +275,6 @@ namespace PrairieKingPrizes
             int[] coveted = { 499, 486, 347, 163, 166, 107 };
             int[] legendary = { 74 };
 
-            if (Game1.player.isInventoryFull() == true)
-            {
-                return;
-            }
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
@@ -344,7 +321,8 @@ namespace PrairieKingPrizes
                 totalTokens -= 50;
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
                 savedData.totalTokens = totalTokens;
-            } else
+            }
+            else
             {
                 Game1.addHUDMessage(new HUDMessage($"You do not have enough Tokens.", 3));
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
