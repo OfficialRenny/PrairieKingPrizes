@@ -3,18 +3,23 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Locations;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using xTile;
+using xTile.Layers;
+using xTile.Tiles;
 
 namespace PrairieKingPrizes
 {
-    public class ModEntry : Mod, IAssetEditor, IAssetLoader
+    public class ModEntry : Mod
     {
         private int coinsCollected;
         private int totalTokens;
         private object LastMinigame;
+        private NPC TokenNPC = null;
         private bool isNPCLoaded = false;
-        private NPC tokenNPC { get; set; }
 
         //[DeluxeGrabber] Map: Saloon
         //[DeluxeGrabber] Tile: {X:36 Y:17}
@@ -22,9 +27,13 @@ namespace PrairieKingPrizes
 
         public override void Entry(IModHelper helper)
         {
+
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
+            SaveEvents.BeforeSave += DeleteNPC_BeforeSave;
+            SaveEvents.AfterSave += AddNPC_AfterSave;
+            InputEvents.ButtonPressed += CheckAction;
         }
 
         public bool CanEdit<T>(IAssetInfo asset)
@@ -41,92 +50,121 @@ namespace PrairieKingPrizes
             return false;
         }
 
-        public void Edit<T>(IAssetData asset)
-        {
-            if (asset.AssetNameEquals("Data/NPCDispositions"))
-            {
-                asset.AsDictionary<string, string>().Data["TokenMachine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon 34 17/Token Machine";
-            }
+        //public void Edit<T>(IAssetData asset)
+        //{
+        //    if (asset.AssetNameEquals("Data/NPCDispositions"))
+        //    {
+        //        asset.AsDictionary<string, string>().Data["TokenMachine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon 34 17/Token Machine";
+        //    }
 
-            if (asset.AssetNameEquals("Data/NPCGiftTastes"))
-            {
-                IDictionary<string, string> NPCGiftTastes = asset.AsDictionary<string, string>().Data;
-                NPCGiftTastes["TokenMachine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
-            }
+        //    if (asset.AssetNameEquals("Data/NPCGiftTastes"))
+        //    {
+        //        IDictionary<string, string> NPCGiftTastes = asset.AsDictionary<string, string>().Data;
+        //        NPCGiftTastes["TokenMachine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
+        //    }
 
-            if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
-            {
-                IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
-                rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
-            }
-        }
+        //    if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
+        //    {
+        //        IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
+        //        rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
+        //    }
+        //}
 
-        public bool CanLoad<T>(IAssetInfo asset)
-        {
-            if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-            {
-                return true;
-            }
+        //public bool CanLoad<T>(IAssetInfo asset)
+        //{
 
-            if (asset.AssetNameEquals("Characters/TokenMachine"))
-            {
-                return true;
-            }
+        //        if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
+        //        {
+        //            return true;
+        //        }
 
-            if (asset.AssetNameEquals("Portraits/TokenMachine"))
-            {
-                return true;
-            }
+        //        if (asset.AssetNameEquals("Characters/TokenMachine"))
+        //        {
+        //            return true;
+        //        }
 
-            if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
-            {
-                return true;
-            }
+        //        if (asset.AssetNameEquals("Portraits/TokenMachine"))
+        //        {
+        //            return true;
+        //        }
 
-            return false;
-        }
+        //        if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
+        //        {
+        //            return true;
+        //        }
+            
+        //    return false;
+        //}
 
-        public T Load<T>(IAssetInfo asset)
-        {
-            if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-            {
-                return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
-            }
+        //public T Load<T>(IAssetInfo asset)
+        //{
 
-            if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
-            {
-                return Helper.Content.Load<T>("assets/tokenSchedule.xnb", ContentSource.ModFolder);
-            }
+        //        if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
+        //        {
+        //            return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
+        //        }
 
-            if (asset.AssetNameEquals("Characters/TokenMachine"))
-            {
-                return Helper.Content.Load<T>("assets/tokenMachine.png", ContentSource.ModFolder);
-            }
+        //        if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
+        //        {
+        //            return Helper.Content.Load<T>("assets/tokenSchedule.xnb", ContentSource.ModFolder);
+        //        }
 
-            if (asset.AssetNameEquals("Portraits/TokenMachine"))
-            {
-                return Helper.Content.Load<T>("assets/portrait.png", ContentSource.ModFolder);
-            }
+        //        if (asset.AssetNameEquals("Characters/TokenMachine"))
+        //        {
+        //            return Helper.Content.Load<T>("assets/tokenMachine.png", ContentSource.ModFolder);
+        //        }
 
-            throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
-        }
+        //        if (asset.AssetNameEquals("Portraits/TokenMachine"))
+        //        {
+        //            return Helper.Content.Load<T>("assets/portrait.png", ContentSource.ModFolder);
+        //        }
+            
+        //    throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+        //}
 
         private void GetCoins(string command, string[] args)
         {
             this.Monitor.Log($"You currently have {totalTokens} coins.");
         }
 
+
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
             var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
             totalTokens = savedData.totalTokens;
 
+            string tilesheetPath = this.Helper.Content.GetActualAssetKey("assets/z_extraSaloonTilesheet2.png", ContentSource.ModFolder);
+
+            GameLocation location = Game1.getLocationFromName("Saloon");
+            TileSheet tilesheet = new TileSheet(
+               id: "z_extraSaloonTilesheet2",
+               map: location.map,
+               imageSource: tilesheetPath,
+               sheetSize: new xTile.Dimensions.Size(48, 16),
+               tileSize: new xTile.Dimensions.Size(16, 16)
+            );
+            location.map.AddTileSheet(tilesheet);
+            location.map.LoadTileSheets(Game1.mapDisplayDevice);
+
+            Layer layerBack = location.map.GetLayer("Back");
+            Layer layerFront = location.map.GetLayer("Front");
+            Layer layerBuildings = location.map.GetLayer("Buildings");
+
+            location.removeTile(34, 18, "Back");
+            TileSheet customTileSheet = location.map.GetTileSheet("z_extraSaloonTilesheet2");
+            layerFront.Tiles[34, 16] = new StaticTile(layerFront, customTileSheet, BlendMode.Alpha, 0);
+            layerBuildings.Tiles[34, 17] = new StaticTile(layerBuildings, customTileSheet, BlendMode.Alpha, 1);
+            layerBack.Tiles[34, 18] = new StaticTile(layerBack, customTileSheet, BlendMode.Alpha, 2);
+
+            location.setTileProperty(34, 17, "Buildings", "Action", "ClubShop");
+
             Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
 
-            NPC tokenNPC = new NPC(null, new Vector2(36f, 17f), "Saloon", 3, "TokenMachine", false, null, portrait);
-
-            Monitor.Log("Created Token Machine NPC.");
-            Monitor.Log($"The token machine should have spawned at {tokenNPC.Position.X},{tokenNPC.Position.Y}");
+            if (TokenNPC == null)
+            {
+                this.TokenNPC = new NPC(null, new Vector2(-1000f, -1000f), "Saloon", 3, "TokenMachine", false, null, Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder));
+                isNPCLoaded = true;
+            }
 
             int basicItemID = 444;
             int premiumItemID = 445;
@@ -134,6 +172,7 @@ namespace PrairieKingPrizes
 
             foreach (int num in Game1.player.dialogueQuestionsAnswered)
             {
+
                 if (num == basicItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
@@ -150,6 +189,47 @@ namespace PrairieKingPrizes
                     this.Monitor.Log($"{cancelID}/cancelID was a valid dialogue answer and has been removed.");
                 }
             }
+        }
+
+        private void CheckAction(object sender, EventArgsInput e)
+        {
+
+            if (Context.IsPlayerFree && e.IsActionButton && (e.Cursor.GrabTile.X == 34 && e.Cursor.GrabTile.Y == 16))
+            {
+                //do nothing
+            }
+        }
+
+        private void DeleteNPC_BeforeSave(object sender, EventArgs args)
+        {
+            if (!Context.IsWorldReady) { return; }
+
+            //if (isNPCLoaded == true)
+            //{
+                
+            //    Game1.removeThisCharacterFromAllLocations(tokenNPC);
+            //    isNPCLoaded = false;
+            //    foreach (GameLocation location in Game1.locations)
+            //    {
+            //        NPC[] matches = location.characters.Where(p => p.Name == "TokenMachine").ToArray();
+            //        if (matches.Any())
+            //            Monitor.Log($"Found the NPC in {location.Name}.", LogLevel.Warn);
+
+            //    }
+            //}
+            //else { return; }
+        }
+
+        private void AddNPC_AfterSave(object sender, EventArgs args)
+        {
+            //Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
+
+            //if (isNPCLoaded == false)
+            //{
+            //    NPC tokenNPC = new NPC(null, new Vector2(34f, 17f), "Saloon", 3, "TokenMachine", false, null, portrait);
+            //    isNPCLoaded = true;
+            //}
+            //else { return; }
         }
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
@@ -258,6 +338,7 @@ namespace PrairieKingPrizes
                 totalTokens -= 10;
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
                 savedData.totalTokens = totalTokens;
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
             }
             else
             {
