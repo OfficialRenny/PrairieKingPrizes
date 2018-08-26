@@ -3,11 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Locations;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using xTile;
 using xTile.Layers;
 using xTile.Tiles;
 
@@ -27,7 +24,6 @@ namespace PrairieKingPrizes
 
         public override void Entry(IModHelper helper)
         {
-
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
@@ -50,8 +46,8 @@ namespace PrairieKingPrizes
             return false;
         }
 
-        //public void Edit<T>(IAssetData asset)
-        //{
+        public void Edit<T>(IAssetData asset)
+        {
         //    if (asset.AssetNameEquals("Data/NPCDispositions"))
         //    {
         //        asset.AsDictionary<string, string>().Data["TokenMachine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon 34 17/Token Machine";
@@ -63,20 +59,19 @@ namespace PrairieKingPrizes
         //        NPCGiftTastes["TokenMachine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
         //    }
 
-        //    if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
-        //    {
-        //        IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
-        //        rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
-        //    }
-        //}
+            if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
+            {
+                IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
+                rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
+            }
+        }
 
-        //public bool CanLoad<T>(IAssetInfo asset)
-        //{
-
-        //        if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-        //        {
-        //            return true;
-        //        }
+        public bool CanLoad<T>(IAssetInfo asset)
+        {
+                if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
+                {
+                    return true;
+                }
 
         //        if (asset.AssetNameEquals("Characters/TokenMachine"))
         //        {
@@ -92,17 +87,16 @@ namespace PrairieKingPrizes
         //        {
         //            return true;
         //        }
-            
-        //    return false;
-        //}
 
-        //public T Load<T>(IAssetInfo asset)
-        //{
+            return false;
+        }
 
-        //        if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-        //        {
-        //            return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
-        //        }
+        public T Load<T>(IAssetInfo asset)
+        {
+                if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
+                {
+                    return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
+                }
 
         //        if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
         //        {
@@ -118,15 +112,14 @@ namespace PrairieKingPrizes
         //        {
         //            return Helper.Content.Load<T>("assets/portrait.png", ContentSource.ModFolder);
         //        }
-            
-        //    throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
-        //}
+
+            throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
+        }
 
         private void GetCoins(string command, string[] args)
         {
             this.Monitor.Log($"You currently have {totalTokens} coins.");
         }
-
 
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
@@ -156,7 +149,7 @@ namespace PrairieKingPrizes
             layerBuildings.Tiles[34, 17] = new StaticTile(layerBuildings, customTileSheet, BlendMode.Alpha, 1);
             layerBack.Tiles[34, 18] = new StaticTile(layerBack, customTileSheet, BlendMode.Alpha, 2);
 
-            location.setTileProperty(34, 17, "Buildings", "Action", "ClubShop");
+            location.setTileProperty(34, 17, "Buildings", "Action", "TokenNPCDialogue");
 
             Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
 
@@ -172,7 +165,6 @@ namespace PrairieKingPrizes
 
             foreach (int num in Game1.player.dialogueQuestionsAnswered)
             {
-
                 if (num == basicItemID)
                 {
                     Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
@@ -193,10 +185,27 @@ namespace PrairieKingPrizes
 
         private void CheckAction(object sender, EventArgsInput e)
         {
-
-            if (Context.IsPlayerFree && e.IsActionButton && (e.Cursor.GrabTile.X == 34 && e.Cursor.GrabTile.Y == 16))
+            if (Context.IsPlayerFree && e.IsActionButton && TokenNPC != null)
             {
-                //do nothing
+                Vector2 grabTile = new Vector2((float)(Game1.getOldMouseX() + Game1.viewport.X), (float)(Game1.getOldMouseY() + Game1.viewport.Y)) / (float)Game1.tileSize;
+                if (!Utility.tileWithinRadiusOfPlayer((int)grabTile.X, (int)grabTile.Y, 1, Game1.player))
+                {
+                    grabTile = Game1.player.GetGrabTile();
+                }
+                xTile.Tiles.Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
+                xTile.ObjectModel.PropertyValue propertyValue = null;
+                if (tile != null)
+                {
+                    tile.Properties.TryGetValue("Action", out propertyValue);
+                }
+                if (propertyValue != null)
+                {
+                    if (propertyValue == "TokenNPCDialogue")
+                    {
+                        this.Monitor.Log("Player has clicked on the Token Machine");
+                        Game1.drawDialogue(TokenNPC);
+                    }
+                }
             }
         }
 
@@ -206,7 +215,6 @@ namespace PrairieKingPrizes
 
             //if (isNPCLoaded == true)
             //{
-                
             //    Game1.removeThisCharacterFromAllLocations(tokenNPC);
             //    isNPCLoaded = false;
             //    foreach (GameLocation location in Game1.locations)
