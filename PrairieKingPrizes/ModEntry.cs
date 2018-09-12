@@ -15,12 +15,6 @@ namespace PrairieKingPrizes
         private int coinsCollected;
         private int totalTokens;
         private object LastMinigame;
-        private NPC TokenNPC = null;
-        private bool isNPCLoaded = false;
-
-        //[DeluxeGrabber] Map: Saloon
-        //[DeluxeGrabber] Tile: {X:36 Y:17}
-        //It's a Surprise Tool That Will Help Us Later
 
         public override void Entry(IModHelper helper)
         {
@@ -28,96 +22,9 @@ namespace PrairieKingPrizes
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
             helper.ConsoleCommands.Add("settokens", "Sets tokens", this.SetCoins);
-            //SaveEvents.BeforeSave += DeleteNPC_BeforeSave;
-            //SaveEvents.AfterSave += AddNPC_AfterSave;
             InputEvents.ButtonPressed += CheckAction;
         }
 
-
-
-        public bool CanEdit<T>(IAssetInfo asset)
-        {
-            if (asset.AssetNameEquals("Data/NPCDispositions"))
-                return true;
-
-            if (asset.AssetNameEquals("Data/NPCGiftTastes"))
-                return true;
-
-            if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
-                return true;
-
-            return false;
-        }
-
-        //public void Edit<T>(IAssetData asset)
-        // {
-        //    if (asset.AssetNameEquals("Data/NPCDispositions"))
-        //    {
-        //         asset.AsDictionary<string, string>().Data["TokenMachine"] = "adult/shy/outgoing/negative/male/non-datable/null/Town/fall 9/null/Saloon -1000 -1000/Token Machine";
-        //     }
-        //
-        //    if (asset.AssetNameEquals("Data/NPCGiftTastes"))
-        //    {
-        //        IDictionary<string, string> NPCGiftTastes = asset.AsDictionary<string, string>().Data;
-        //        NPCGiftTastes["TokenMachine"] = "ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS//ERROR: I DO NOT ACCEPT GIFTS/-2 -4 -5 -6 -7 -8 -9 -12 -14 -15 -16 -17 -18 -19 -20 -21 -22 -23 -24 -25 -26 -27 -28 -29 -74 -75 -79 -80 -81 -95 -96 -98 -99/ERROR: I DO NOT ACCEPT GIFTS//";
-        //    }
-
-        //    if (asset.AssetNameEquals("Characters/Dialogue/rainy"))
-        //   {
-        //      IDictionary<string, string> rainy = asset.AsDictionary<string, string>().Data;
-        //      rainy["TokenMachine"] = "I HOPE I DO NOT GET WET IN THIS RAIN. OH WAIT, I CANNOT MOVE. HA. HA.";
-        //   }
-        //  }
-
-        // public bool CanLoad<T>(IAssetInfo asset)
-        // {
-        //       if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-        //       {
-        //           return true;
-        //       }
-
-        //        if (asset.AssetNameEquals("Characters/TokenMachine"))
-        //        {
-        //            return true;
-        //        }
-
-        //        if (asset.AssetNameEquals("Portraits/TokenMachine"))
-        //        {
-        //            return true;
-        //        }
-
-        //        if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
-        //        {
-        //            return true;
-        //        }
-
-        //   return false;
-        //}
-
-        //public T Load<T>(IAssetInfo asset)
-        //{
-        //        if (asset.AssetNameEquals("Characters/Dialogue/TokenMachine"))
-        //        {
-        //            return Helper.Content.Load<T>("assets/tokenDialogue.xnb", ContentSource.ModFolder);
-        //        }
-
-        //        if (asset.AssetNameEquals("Characters/Schedules/TokenMachine"))
-        //        {
-        //            return Helper.Content.Load<T>("assets/tokenSchedule.xnb", ContentSource.ModFolder);
-        //        }
-
-        //        if (asset.AssetNameEquals("Characters/TokenMachine"))
-        //        {
-        //            return Helper.Content.Load<T>("assets/tokenMachine.png", ContentSource.ModFolder);
-        //        }
-
-        //        if (asset.AssetNameEquals("Portraits/TokenMachine"))
-        //        {
-        //            return Helper.Content.Load<T>("assets/portrait.png", ContentSource.ModFolder);
-        //        }
-
-        //  throw new InvalidOperationException($"Unexpected asset '{asset.AssetName}'.");
-        //}
 
         private void GetCoins(string command, string[] args)
         {
@@ -169,38 +76,6 @@ namespace PrairieKingPrizes
             layerBack.Tiles[34, 18] = new StaticTile(layerBack, customTileSheet, BlendMode.Alpha, 2);
 
             location.setTileProperty(34, 17, "Buildings", "Action", "TokenMachine");
-
-            Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
-
-            //if (this.TokenNPC == null)
-            //{
-            //    this.TokenNPC = new NPC(null, new Vector2(-1000f, -1000f), "Saloon", 3, "TokenMachine", false, null, Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder));
-            //    Game1.locations[Game1.locations.Count - 1].addCharacter(this.TokenNPC);
-            //    isNPCLoaded = true;
-            //}
-
-            //int basicItemID = 444;
-            //int premiumItemID = 445;
-            //int cancelID = 446;
-
-            //foreach (int num in game1.player.dialoguequestionsanswered)
-            //{
-            //    if (num == basicitemid)
-            //    {
-            //        game1.player.dialoguequestionsanswered.remove(basicitemid);
-            //        this.monitor.log($"{basicitemid}/basicitemid was a valid dialogue answer and has been removed.");
-            //    }
-            //    if (num == premiumitemid)
-            //    {
-            //        game1.player.dialoguequestionsanswered.remove(premiumitemid);
-            //        this.monitor.log($"{premiumitemid}/premiumitemid was a valid dialogue answer and has been removed.");
-            //    }
-            //    if (num == cancelid)
-            //    {
-            //        game1.player.dialoguequestionsanswered.remove(cancelid);
-            //        this.monitor.log($"{cancelid}/cancelid was a valid dialogue answer and has been removed.");
-            //    }
-            //}
         }
 
         private void CheckAction(object sender, EventArgsInput e)
@@ -222,16 +97,11 @@ namespace PrairieKingPrizes
                 {
                     if (propertyValue == "TokenMachine")
                     {
-                        //this.Monitor.Log("Player has clicked on the Token Machine");
-                        //NPC TokenMachine = Game1.getCharacterFromName("TokenMachine");
-                        //Game1.drawDialogue(TokenMachine);
-
                         Response basic = new Response("Basic", "Basic Tier (10 Tokens)");
                         Response premium = new Response("Premium", "Premium Tier (50 Tokens)");
                         Response cancel = new Response("Cancel", "Cancel");
                         Response[] answers = { basic, premium, cancel };
 
-                        
                         Game1.player.currentLocation.createQuestionDialogue("Would you like to spend your tokens to receive a random item?", answers, AfterQuestion, null);
                         
                     }
@@ -241,7 +111,7 @@ namespace PrairieKingPrizes
 
         private void AfterQuestion(Farmer who, string whichAnswer)
         {
-            this.Monitor.Log("Successfully called the AfterQuestion method");
+            //this.Monitor.Log("Successfully called the AfterQuestion method");
             if (whichAnswer == "Basic")
             {
                 givePlayerBasicItem();
@@ -251,36 +121,6 @@ namespace PrairieKingPrizes
             } else { return;  }
         }
 
-        //private void DeleteNPC_BeforeSave(object sender, EventArgs args)
-        //{
-        //    if (!Context.IsWorldReady) { return; }
-
-        //    //if (isNPCLoaded == true)
-        //    //{
-        //    //    Game1.removeThisCharacterFromAllLocations(tokenNPC);
-        //    //    isNPCLoaded = false;
-        //    //    foreach (GameLocation location in Game1.locations)
-        //    //    {
-        //    //        NPC[] matches = location.characters.Where(p => p.Name == "TokenMachine").ToArray();
-        //    //        if (matches.Any())
-        //    //            Monitor.Log($"Found the NPC in {location.Name}.", LogLevel.Warn);
-
-        //    //    }
-        //    //}
-        //    //else { return; }
-        //}
-
-        //private void AddNPC_AfterSave(object sender, EventArgs args)
-        //{
-            //Texture2D portrait = Helper.Content.Load<Texture2D>("assets/portrait.png", ContentSource.ModFolder);
-
-            //if (isNPCLoaded == false)
-            //{
-            //    NPC tokenNPC = new NPC(null, new Vector2(34f, 17f), "Saloon", 3, "TokenMachine", false, null, portrait);
-            //    isNPCLoaded = true;
-            //}
-            //else { return; }
-        //}
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
         {
@@ -306,32 +146,6 @@ namespace PrairieKingPrizes
                 needToUpdateSavedData = false;
                 coinsCollected = 0;
             }
-
-            //int basicItemID = 444;
-            //int premiumItemID = 445;
-            //int cancelID = 446;
-
-            //foreach (int num in Game1.player.dialogueQuestionsAnswered)
-            //{
-            //    if (num == basicItemID)
-            //    {
-            //        givePlayerBasicItem();
-            //        Game1.player.dialogueQuestionsAnswered.Remove(basicItemID);
-            //        this.Monitor.Log($"{basicItemID}/basicItemID was a valid dialogue answer and has been removed.");
-            //    }
-            //    if (num == premiumItemID)
-            //    {
-            //        givePlayerPremiumItem();
-            //        Game1.player.dialogueQuestionsAnswered.Remove(premiumItemID);
-            //        this.Monitor.Log($"{premiumItemID}/premiumItemID was a valid dialogue answer and has been removed.");
-            //    }
-            //    if (num == cancelID)
-            //    {
-            //        Game1.player.dialogueQuestionsAnswered.Remove(cancelID);
-            //        this.Monitor.Log($"{cancelID}/cancelID was a valid dialogue answer and has been removed.");
-            //        return;
-            //    }
-            //}
         }
 
         private void givePlayerBasicItem()
@@ -355,7 +169,7 @@ namespace PrairieKingPrizes
                 if (diceRoll <= 0.01)
                 {
                     //give legendary item
-                    this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(74, 1, false, -1, 0));
                 }
                 if (diceRoll > 0.01 && diceRoll <= 0.1)
@@ -363,7 +177,7 @@ namespace PrairieKingPrizes
                     //give coveted item
                     Random rnd = new Random();
                     int r = rnd.Next(coveted.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(coveted[r], 1, false, -1, 0));
                 }
                 if (diceRoll > 0.1 && diceRoll <= 0.3)
@@ -371,7 +185,7 @@ namespace PrairieKingPrizes
                     //give rare item
                     Random rnd = new Random();
                     int r = rnd.Next(rare.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 1, false, -1, 0));
                 }
                 if (diceRoll > 0.3 && diceRoll <= 0.6)
@@ -379,7 +193,7 @@ namespace PrairieKingPrizes
                     //give uncommon item
                     Random rnd = new Random();
                     int r = rnd.Next(uncommon.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 1, false, -1, 0));
                 }
                 if (diceRoll > 0.6 && diceRoll <= 1)
@@ -387,7 +201,7 @@ namespace PrairieKingPrizes
                     //give common item
                     Random rnd = new Random();
                     int r = rnd.Next(common.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 1, false, -1, 0));
                 }
             }
@@ -420,7 +234,7 @@ namespace PrairieKingPrizes
                 if (diceRoll <= 0.05)
                 {
                     //give legendary premium item
-                    this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of 74.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(74, 2, false, -1, 0));
                 }
                 if (diceRoll > 0.05 && diceRoll <= 0.25)
@@ -428,7 +242,7 @@ namespace PrairieKingPrizes
                     //give coveted premium item
                     Random rnd = new Random();
                     int r = rnd.Next(coveted.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {coveted[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(coveted[r], 5, false, -1, 0));
                 }
                 if (diceRoll > 0.25 && diceRoll <= 0.45)
@@ -436,7 +250,7 @@ namespace PrairieKingPrizes
                     //give rare premium item
                     Random rnd = new Random();
                     int r = rnd.Next(rare.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 10, false, -1, 0));
                 }
                 if (diceRoll > 0.45 && diceRoll <= 0.8)
@@ -444,7 +258,7 @@ namespace PrairieKingPrizes
                     //give uncommon premium item
                     Random rnd = new Random();
                     int r = rnd.Next(uncommon.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 15, false, -1, 0));
                 }
                 if (diceRoll > 0.8 && diceRoll <= 1)
@@ -452,7 +266,7 @@ namespace PrairieKingPrizes
                     //give common premium item
                     Random rnd = new Random();
                     int r = rnd.Next(common.Length);
-                    this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
+                    //this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
                     Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 25, false, -1, 0));
                 }
             }
@@ -465,13 +279,13 @@ namespace PrairieKingPrizes
         }
     }
 
-    //Secret Hacks - Basic Item
+    //Secrets - Basic Item
     //    Common - 40%
     //    Uncommon - 30%
     //    Rare - 20%
     //    Coveted - 9%
     //    Legendary - 1%
-    //Secret Hacks - Premium Item
+    //Secrets - Premium Item
     //    Common - 20%
     //    Uncommon - 25%
     //    Rare - 30%
