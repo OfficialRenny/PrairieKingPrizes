@@ -1,10 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
-using System.Collections.Generic;
 using xTile.Layers;
 using xTile.Tiles;
 
@@ -21,8 +19,9 @@ namespace PrairieKingPrizes
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
-            helper.ConsoleCommands.Add("settokens", "Sets tokens", this.SetCoins);
             InputEvents.ButtonPressed += CheckAction;
+            SaveEvents.AfterSave += UpdateSavedData;
+
         }
 
 
@@ -31,26 +30,10 @@ namespace PrairieKingPrizes
             this.Monitor.Log($"You currently have {totalTokens} coins.");
         }
 
-        public void SetCoins(string command, string[] args)
-        {
-            int tokensToAdd = 0;
-            if( args.Length > 1)
-            {
-                this.Monitor.Log("Please input only a single number as an argument.");
-                return;
-            }
-            if (Int32.TryParse(args[0], out tokensToAdd))
-            {
-                totalTokens += tokensToAdd;
-                this.Monitor.Log($"{tokensToAdd} tokens added.");
-                tokensToAdd = 0;
-            } else { this.Monitor.Log("NaN!"); }
-        }
-
         private void AfterSaveLoaded(object sender, EventArgs args)
         {
             var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-            totalTokens = savedData.totalTokens;
+            totalTokens = savedData.TotalTokens;
 
             string tilesheetPath = this.Helper.Content.GetActualAssetKey("assets/z_extraSaloonTilesheet2.png", ContentSource.ModFolder);
 
@@ -78,6 +61,13 @@ namespace PrairieKingPrizes
             location.setTileProperty(34, 17, "Buildings", "Action", "TokenMachine");
         }
 
+        private void UpdateSavedData(object sender, EventArgs args)
+        {
+            var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+            savedData.TotalTokens = totalTokens;
+            this.Helper.WriteJsonFile($"data/{Constants.SaveFolderName}.json", savedData);
+        }
+
         private void CheckAction(object sender, EventArgsInput e)
         {
             if (Context.IsPlayerFree && e.IsActionButton)
@@ -103,7 +93,7 @@ namespace PrairieKingPrizes
                         Response[] answers = { basic, premium, cancel };
 
                         Game1.player.currentLocation.createQuestionDialogue("Would you like to spend your tokens to receive a random item?", answers, AfterQuestion, null);
-                        
+
                     }
                 }
             }
@@ -115,10 +105,12 @@ namespace PrairieKingPrizes
             if (whichAnswer == "Basic")
             {
                 givePlayerBasicItem();
-            } else if (whichAnswer == "Premium")
+            }
+            else if (whichAnswer == "Premium")
             {
                 givePlayerPremiumItem();
-            } else { return;  }
+            }
+            else { return; }
         }
 
 
@@ -142,7 +134,8 @@ namespace PrairieKingPrizes
             if (needToUpdateSavedData)
             {
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.totalTokens = totalTokens;
+                savedData.TotalTokens = totalTokens;
+                this.Helper.WriteJsonFile($"data/{Constants.SaveFolderName}.json", savedData);
                 needToUpdateSavedData = false;
                 coinsCollected = 0;
             }
@@ -163,7 +156,9 @@ namespace PrairieKingPrizes
             {
                 totalTokens -= 10;
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.totalTokens = totalTokens;
+                savedData.TotalTokens = totalTokens;
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
+
 
 
                 if (diceRoll <= 0.01)
@@ -224,13 +219,14 @@ namespace PrairieKingPrizes
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
-            totalTokens -= 50;
-            var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-            savedData.totalTokens = totalTokens;
-            Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
-
             if (totalTokens >= 50)
             {
+                totalTokens -= 50;
+                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
+                savedData.TotalTokens = totalTokens;
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
+
+
                 if (diceRoll <= 0.05)
                 {
                     //give legendary premium item
@@ -277,23 +273,24 @@ namespace PrairieKingPrizes
                 return;
             }
         }
-    }
 
-    //Secrets - Basic Item
-    //    Common - 40%
-    //    Uncommon - 30%
-    //    Rare - 20%
-    //    Coveted - 9%
-    //    Legendary - 1%
-    //Secrets - Premium Item
-    //    Common - 20%
-    //    Uncommon - 25%
-    //    Rare - 30%
-    //    Coveted - 20%
-    //    Legendary - 5%
 
-    internal class SavedData
-    {
-        public int totalTokens { get; set; }
+        //Secrets - Basic Item
+        //    Common - 40%
+        //    Uncommon - 30%
+        //    Rare - 20%
+        //    Coveted - 9%
+        //    Legendary - 1%
+        //Secrets - Premium Item
+        //    Common - 20%
+        //    Uncommon - 25%
+        //    Rare - 30%
+        //    Coveted - 20%
+        //    Legendary - 5%
+
+        internal class SavedData
+        {
+            public int TotalTokens { get; set; }
+        }
     }
 }

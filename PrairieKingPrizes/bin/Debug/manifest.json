@@ -1,7 +1,7 @@
 {
    "Name": "Prairie King Prizes",
    "Author": "Renny",
-   "Version": "1.0",
+   "Version": "0.9-beta",
    "Description": "Lets you earn prizes by playing Prairie King.",
    "UniqueID": "renny.prairiekingprizes",
    "EntryDll": "PrairieKingPrizes.dll",
