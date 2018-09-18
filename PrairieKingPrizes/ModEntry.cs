@@ -3,31 +3,133 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using xTile.Layers;
 using xTile.Tiles;
 
 namespace PrairieKingPrizes
 {
-    public class ModEntry : Mod
+    public class ModEntry : Mod, IAssetEditor
     {
         private int coinsCollected;
         private int totalTokens;
         private object LastMinigame;
+        private int[] common = { 495, 496, 497, 498, 390, 388, 441, 463, 464, 465, 535, 709 };
+        private int[] uncommon = { 88, 301, 302, 431, 453, 472, 473, 475, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 488, 489, 490, 491, 492, 493, 494, 466, 710, 724, 725, 726, 536, 537, 787 };
+        private int[] rare = { 72, 337, 417, 305, 308, 336, 335, 340, 413, 430, 433, 437, 444, 446, 439, 680, 749, 797, 486, 681, 690, 688, 689 };
+        private int[] coveted = { 499, 347, 417, 163, 166, 107, 341, 645, 789, 520, 682, 585, 586, 587, 373 };
+        private int[] legendary = { 74 };
+        IDictionary<int, string> objectData;
 
         public override void Entry(IModHelper helper)
         {
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
+            helper.ConsoleCommands.Add("orangemonkeyeagle", "Debug stuff, outputs a list of all items in the loot pool.", this.OrangeMonkeyEagle);
             InputEvents.ButtonPressed += CheckAction;
             SaveEvents.AfterSave += UpdateSavedData;
-
         }
 
+        public bool CanEdit<T>(IAssetInfo asset)
+        {
+            if (asset.AssetNameEquals("Data/ObjectInformation"))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public void Edit<T>(IAssetData asset)
+        {
+            if (asset.AssetNameEquals("Data/ObjectInformation"))
+            {
+                objectData = asset.AsDictionary<int, string>().Data;
+            }
+        }
 
         private void GetCoins(string command, string[] args)
         {
             this.Monitor.Log($"You currently have {totalTokens} coins.");
+        }
+
+        private void OrangeMonkeyEagle(string command, string[] args)
+        {
+            if (args.Length > 0)
+            {
+                return;
+            }
+
+            double allItems = common.Count() + uncommon.Count() + rare.Count() + coveted.Count() + legendary.Count();
+            double totalPercentageBasic = 0;
+            double totalPercentagePremium = 0;
+
+
+            Monitor.Log("--- Common Items - 40% Basic/20% Premium ---");
+            foreach (int index in common)
+            {
+                if (objectData.TryGetValue(index, out string entry))
+                {
+                    string[] fields = entry.Split('/');
+                    string name = fields[0];
+                    totalPercentageBasic += Math.Round((0.4 / common.Count()) * 100, 2);
+                    totalPercentagePremium += Math.Round((0.2 / common.Count()) * 100, 2);
+                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.4 / common.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / common.Count()) * 100, 2)}% in the premium box.");
+                }
+            }
+            Monitor.Log("--- Uncommon Items - 30% Basic/25% Premium ---");
+            foreach (int index in uncommon)
+            {
+                if (objectData.TryGetValue(index, out string entry))
+                {
+                    string[] fields = entry.Split('/');
+                    string name = fields[0];
+                    totalPercentageBasic += Math.Round((0.3 / uncommon.Count()) * 100, 2);
+                    totalPercentagePremium += Math.Round((0.25 / uncommon.Count()) * 100, 2);
+                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.3 / uncommon.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.25 / uncommon.Count()) * 100, 2)}% in the premium box.");
+                }
+            }
+            Monitor.Log("--- Rare Items - 20% Basic/30% Premium ---");
+            foreach (int index in rare)
+            {
+                if (objectData.TryGetValue(index, out string entry))
+                {
+                    string[] fields = entry.Split('/');
+                    string name = fields[0];
+                    totalPercentageBasic += Math.Round((0.2 / rare.Count()) * 100, 2);
+                    totalPercentagePremium += Math.Round((0.3 / rare.Count()) * 100, 2);
+                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.2 / rare.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.3 / rare.Count()) * 100, 2)}% in the premium box.");
+                }
+            }
+            Monitor.Log("--- Coveted Items - 9% Basic/20% Premium ---");
+            foreach (int index in coveted)
+            {
+                if (objectData.TryGetValue(index, out string entry))
+                {
+                    string[] fields = entry.Split('/');
+                    string name = fields[0];
+                    totalPercentageBasic += Math.Round((0.09 / coveted.Count()) * 100, 2);
+                    totalPercentagePremium += Math.Round((0.2 / coveted.Count()) * 100, 2);
+                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.09 / coveted.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / coveted.Count()) * 100), 2}% in the premium box.");
+                }
+            }
+            Monitor.Log("--- Legendary Items - 1% Basic/5% Premium ---");
+            foreach (int index in legendary)
+            {
+                if (objectData.TryGetValue(index, out string entry))
+                {
+                    string[] fields = entry.Split('/');
+                    string name = fields[0];
+                    totalPercentageBasic += Math.Round((0.01 / legendary.Count()) * 100, 2);
+                    totalPercentagePremium += Math.Round((0.05 / legendary.Count()) * 100, 2);
+                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.01 / legendary.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.05 / legendary.Count()) * 100, 2)}% in the premium box.");
+                }
+            }
+            Monitor.Log($"--- Basic: {Math.Round(totalPercentageBasic, 2)}% | Premium: {Math.Round(totalPercentagePremium, 2)}% | Both should be 100% (Or close to it)");
         }
 
         private void AfterSaveLoaded(object sender, EventArgs args)
@@ -77,7 +179,7 @@ namespace PrairieKingPrizes
                 {
                     grabTile = Game1.player.GetGrabTile();
                 }
-                xTile.Tiles.Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
+                Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
                 xTile.ObjectModel.PropertyValue propertyValue = null;
                 if (tile != null)
                 {
@@ -90,10 +192,10 @@ namespace PrairieKingPrizes
                         Response basic = new Response("Basic", "Basic Tier (10 Tokens)");
                         Response premium = new Response("Premium", "Premium Tier (50 Tokens)");
                         Response cancel = new Response("Cancel", "Cancel");
-                        Response[] answers = { basic, premium, cancel };
+                        Response checkTokens = new Response("Tokens", "Check Tokens");
+                        Response[] answers = { basic, premium, checkTokens, cancel, };
 
                         Game1.player.currentLocation.createQuestionDialogue("Would you like to spend your tokens to receive a random item?", answers, AfterQuestion, null);
-
                     }
                 }
             }
@@ -110,14 +212,18 @@ namespace PrairieKingPrizes
             {
                 givePlayerPremiumItem();
             }
-            else { return; }
+            else if (whichAnswer == "Tokens")
+            {
+                checkPlayersTokens();
+            }
+            else
+            {
+                return;
+            }
         }
-
 
         private void GameEvents_UpdateTick(object sender, EventArgs e)
         {
-            bool needToUpdateSavedData = false;
-
             if (Game1.currentMinigame != null && "AbigailGame".Equals(Game1.currentMinigame.GetType().Name))
             {
                 Type minigameType = Game1.currentMinigame.GetType();
@@ -128,27 +234,19 @@ namespace PrairieKingPrizes
             if (Game1.currentMinigame == null && "AbigailGame".Equals(LastMinigame))
             {
                 totalTokens += coinsCollected;
-                needToUpdateSavedData = true;
-            }
-
-            if (needToUpdateSavedData)
-            {
-                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.TotalTokens = totalTokens;
-                this.Helper.WriteJsonFile($"data/{Constants.SaveFolderName}.json", savedData);
-                needToUpdateSavedData = false;
                 coinsCollected = 0;
             }
         }
 
+        private void checkPlayersTokens()
+        {
+            Game1.playSound("purchase");
+            Game1.drawDialogueBox($"You currently have {totalTokens} tokens.");
+            return;
+        }
+
         private void givePlayerBasicItem()
         {
-            int[] common = { 495, 496, 497, 498 };
-            int[] uncommon = { 88, 301, 302, 431, 433, 453, 472, 473, 473, 475, 475, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 488, 489, 490, 491, 492, 493, 494 };
-            int[] rare = { 72, 337, 417, 434, 305 };
-            int[] coveted = { 499, 486, 347, 163, 166, 107 };
-            int[] legendary = { 74 };
-
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
@@ -158,8 +256,7 @@ namespace PrairieKingPrizes
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
                 savedData.TotalTokens = totalTokens;
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
-
-
+                Game1.playSound("purchase");
 
                 if (diceRoll <= 0.01)
                 {
@@ -181,7 +278,7 @@ namespace PrairieKingPrizes
                     Random rnd = new Random();
                     int r = rnd.Next(rare.Length);
                     //this.Monitor.Log($"Attempting to give player an item with the ID of {rare[r]}.");
-                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 1, false, -1, 0));
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(rare[r], 2, false, -1, 0));
                 }
                 if (diceRoll > 0.3 && diceRoll <= 0.6)
                 {
@@ -189,7 +286,7 @@ namespace PrairieKingPrizes
                     Random rnd = new Random();
                     int r = rnd.Next(uncommon.Length);
                     //this.Monitor.Log($"Attempting to give player an item with the ID of {uncommon[r]}.");
-                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 1, false, -1, 0));
+                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(uncommon[r], 3, false, -1, 0));
                 }
                 if (diceRoll > 0.6 && diceRoll <= 1)
                 {
@@ -197,25 +294,31 @@ namespace PrairieKingPrizes
                     Random rnd = new Random();
                     int r = rnd.Next(common.Length);
                     //this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
-                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 1, false, -1, 0));
+                    if(common[r] == 390 || common[r] == 388)
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 30, false, -1, 0));
+                    }
+                    if (common[r] == 709)
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 15, false, -1, 0));
+                    }
+                    else
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 5, false, -1, 0));
+                    }
                 }
             }
             else
             {
                 Game1.addHUDMessage(new HUDMessage($"You do not have enough Tokens.", 3));
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
+                Game1.playSound("cancel");
                 return;
             }
         }
 
         private void givePlayerPremiumItem()
         {
-            int[] common = { 495, 496, 497, 498 };
-            int[] uncommon = { 88, 301, 302, 431, 433, 453, 472, 473, 473, 475, 475, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 488, 489, 490, 491, 492, 493, 494 };
-            int[] rare = { 72, 337, 417, 434, 305 };
-            int[] coveted = { 499, 486, 347, 163, 166, 107 };
-            int[] legendary = { 74 };
-
             Random random = new Random();
             double diceRoll = random.NextDouble();
 
@@ -225,7 +328,7 @@ namespace PrairieKingPrizes
                 var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
                 savedData.TotalTokens = totalTokens;
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
-
+                Game1.playSound("purchase");
 
                 if (diceRoll <= 0.05)
                 {
@@ -263,30 +366,41 @@ namespace PrairieKingPrizes
                     Random rnd = new Random();
                     int r = rnd.Next(common.Length);
                     //this.Monitor.Log($"Attempting to give player an item with the ID of {common[r]}.");
-                    Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 25, false, -1, 0));
+                    if (common[r] == 390 || common[r] == 388)
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 65, false, -1, 0));
+                    }
+                    if (common[r] == 709)
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 40, false, -1, 0));
+                    }
+                    else
+                    {
+                        Game1.player.addItemByMenuIfNecessary((Item)new StardewValley.Object(common[r], 25, false, -1, 0));
+                    }
                 }
             }
             else
             {
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {totalTokens}.", 2));
                 Game1.addHUDMessage(new HUDMessage($"You do not have enough Tokens.", 3));
+                Game1.playSound("cancel");
                 return;
             }
         }
 
-
         //Secrets - Basic Item
-        //    Common - 40%
-        //    Uncommon - 30%
-        //    Rare - 20%
-        //    Coveted - 9%
-        //    Legendary - 1%
+        //    Common - 40% | Quantity: 5
+        //    Uncommon - 30% | Quantity: 3
+        //    Rare - 20% | Quantity: 2
+        //    Coveted - 9% | Quantity: 1
+        //    Legendary - 1% | Quantity: 1
         //Secrets - Premium Item
-        //    Common - 20%
-        //    Uncommon - 25%
-        //    Rare - 30%
-        //    Coveted - 20%
-        //    Legendary - 5%
+        //    Common - 20% | Quantity: 25
+        //    Uncommon - 25% | Quantity: 15
+        //    Rare - 30% | Quantity: 10
+        //    Coveted - 20% | Quantity: 5
+        //    Legendary - 5% | Quantity: 2
 
         internal class SavedData
         {

@@ -6,5 +6,5 @@
    "UniqueID": "renny.prairiekingprizes",
    "EntryDll": "PrairieKingPrizes.dll",
    "MinimumApiVersion": "2.7",
-   "UpdateKeys": []
+   "UpdateKeys": [ "Nexus:2811" ]
 }
