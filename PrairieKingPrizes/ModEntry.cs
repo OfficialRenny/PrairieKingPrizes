@@ -16,18 +16,19 @@ namespace PrairieKingPrizes
         private int totalTokens;
         private object LastMinigame;
         private int[] common = { 495, 496, 497, 498, 390, 388, 441, 463, 464, 465, 535, 709 };
-        private int[] uncommon = { 88, 301, 302, 431, 453, 472, 473, 475, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 488, 489, 490, 491, 492, 493, 494, 466, 710, 724, 725, 726, 536, 537, 787 };
-        private int[] rare = { 72, 337, 417, 305, 308, 336, 335, 340, 413, 430, 433, 437, 444, 446, 439, 680, 749, 797, 486, 681, 690, 688, 689 };
+        private int[] uncommon = { 88, 301, 302, 431, 453, 472, 473, 475, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 488, 489, 490, 491, 492, 493, 494, 466, 340, 724, 725, 726, 536, 537, 335 };
+        private int[] rare = { 72, 337, 417, 305, 308, 336, 787, 710, 413, 430, 433, 437, 444, 446, 439, 680, 749, 797, 486, 681, 690, 688, 689 };
         private int[] coveted = { 499, 347, 417, 163, 166, 107, 341, 645, 789, 520, 682, 585, 586, 587, 373 };
         private int[] legendary = { 74 };
         IDictionary<int, string> objectData;
+        
 
         public override void Entry(IModHelper helper)
         {
             GameEvents.UpdateTick += GameEvents_UpdateTick;
             SaveEvents.AfterLoad += AfterSaveLoaded;
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", this.GetCoins);
-            helper.ConsoleCommands.Add("orangemonkeyeagle", "Debug stuff, outputs a list of all items in the loot pool.", this.OrangeMonkeyEagle);
+            helper.ConsoleCommands.Add("orange", "Debug stuff, outputs a list of all items in the loot pool. Needs 3 special words in order to activate.", this.OrangeMonkeyEagle);
             InputEvents.ButtonPressed += CheckAction;
             SaveEvents.AfterSave += UpdateSavedData;
         }
@@ -59,77 +60,84 @@ namespace PrairieKingPrizes
 
         private void OrangeMonkeyEagle(string command, string[] args)
         {
-            if (args.Length > 0)
+            if (args.Length == 2)
             {
-                return;
-            }
-
-            double allItems = common.Count() + uncommon.Count() + rare.Count() + coveted.Count() + legendary.Count();
-            double totalPercentageBasic = 0;
-            double totalPercentagePremium = 0;
+                if (args[0].ToLower() == "monkey" && args[1].ToLower() == "eagle")
+                {
 
 
-            Monitor.Log("--- Common Items - 40% Basic/20% Premium ---");
-            foreach (int index in common)
-            {
-                if (objectData.TryGetValue(index, out string entry))
-                {
-                    string[] fields = entry.Split('/');
-                    string name = fields[0];
-                    totalPercentageBasic += Math.Round((0.4 / common.Count()) * 100, 2);
-                    totalPercentagePremium += Math.Round((0.2 / common.Count()) * 100, 2);
-                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.4 / common.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / common.Count()) * 100, 2)}% in the premium box.");
+                    double allItems = common.Count() + uncommon.Count() + rare.Count() + coveted.Count() + legendary.Count();
+                    double totalPercentageBasic = 0;
+                    double totalPercentagePremium = 0;
+
+
+                    Monitor.Log("--- Common Items - 40% Basic/20% Premium ---");
+                    foreach (int index in common)
+                    {
+                        if (objectData.TryGetValue(index, out string entry))
+                        {
+                            string[] fields = entry.Split('/');
+                            string name = fields[0];
+                            totalPercentageBasic += Math.Round((0.4 / common.Count()) * 100, 2);
+                            totalPercentagePremium += Math.Round((0.2 / common.Count()) * 100, 2);
+                            this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.4 / common.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / common.Count()) * 100, 2)}% in the premium box.");
+                        }
+                    }
+                    Monitor.Log("--- Uncommon Items - 30% Basic/25% Premium ---");
+                    foreach (int index in uncommon)
+                    {
+                        if (objectData.TryGetValue(index, out string entry))
+                        {
+                            string[] fields = entry.Split('/');
+                            string name = fields[0];
+                            totalPercentageBasic += Math.Round((0.3 / uncommon.Count()) * 100, 2);
+                            totalPercentagePremium += Math.Round((0.25 / uncommon.Count()) * 100, 2);
+                            this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.3 / uncommon.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.25 / uncommon.Count()) * 100, 2)}% in the premium box.");
+                        }
+                    }
+                    Monitor.Log("--- Rare Items - 20% Basic/30% Premium ---");
+                    foreach (int index in rare)
+                    {
+                        if (objectData.TryGetValue(index, out string entry))
+                        {
+                            string[] fields = entry.Split('/');
+                            string name = fields[0];
+                            totalPercentageBasic += Math.Round((0.2 / rare.Count()) * 100, 2);
+                            totalPercentagePremium += Math.Round((0.3 / rare.Count()) * 100, 2);
+                            this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.2 / rare.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.3 / rare.Count()) * 100, 2)}% in the premium box.");
+                        }
+                    }
+                    Monitor.Log("--- Coveted Items - 9% Basic/20% Premium ---");
+                    foreach (int index in coveted)
+                    {
+                        if (objectData.TryGetValue(index, out string entry))
+                        {
+                            string[] fields = entry.Split('/');
+                            string name = fields[0];
+                            totalPercentageBasic += Math.Round((0.09 / coveted.Count()) * 100, 2);
+                            totalPercentagePremium += Math.Round((0.2 / coveted.Count()) * 100, 2);
+                            this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.09 / coveted.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / coveted.Count()) * 100),2}% in the premium box.");
+                        }
+                    }
+                    Monitor.Log("--- Legendary Items - 1% Basic/5% Premium ---");
+                    foreach (int index in legendary)
+                    {
+                        if (objectData.TryGetValue(index, out string entry))
+                        {
+                            string[] fields = entry.Split('/');
+                            string name = fields[0];
+                            totalPercentageBasic += Math.Round((0.01 / legendary.Count()) * 100, 2);
+                            totalPercentagePremium += Math.Round((0.05 / legendary.Count()) * 100, 2);
+                            this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.01 / legendary.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.05 / legendary.Count()) * 100, 2)}% in the premium box.");
+                        }
+                    }
+                    Monitor.Log($"--- Basic: {Math.Round(totalPercentageBasic, 2)}% | Premium: {Math.Round(totalPercentagePremium, 2)}% | Both should be 100% (Or close to it)");
                 }
             }
-            Monitor.Log("--- Uncommon Items - 30% Basic/25% Premium ---");
-            foreach (int index in uncommon)
+            else
             {
-                if (objectData.TryGetValue(index, out string entry))
-                {
-                    string[] fields = entry.Split('/');
-                    string name = fields[0];
-                    totalPercentageBasic += Math.Round((0.3 / uncommon.Count()) * 100, 2);
-                    totalPercentagePremium += Math.Round((0.25 / uncommon.Count()) * 100, 2);
-                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.3 / uncommon.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.25 / uncommon.Count()) * 100, 2)}% in the premium box.");
-                }
+                Monitor.Log("Invalid Arguments");
             }
-            Monitor.Log("--- Rare Items - 20% Basic/30% Premium ---");
-            foreach (int index in rare)
-            {
-                if (objectData.TryGetValue(index, out string entry))
-                {
-                    string[] fields = entry.Split('/');
-                    string name = fields[0];
-                    totalPercentageBasic += Math.Round((0.2 / rare.Count()) * 100, 2);
-                    totalPercentagePremium += Math.Round((0.3 / rare.Count()) * 100, 2);
-                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.2 / rare.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.3 / rare.Count()) * 100, 2)}% in the premium box.");
-                }
-            }
-            Monitor.Log("--- Coveted Items - 9% Basic/20% Premium ---");
-            foreach (int index in coveted)
-            {
-                if (objectData.TryGetValue(index, out string entry))
-                {
-                    string[] fields = entry.Split('/');
-                    string name = fields[0];
-                    totalPercentageBasic += Math.Round((0.09 / coveted.Count()) * 100, 2);
-                    totalPercentagePremium += Math.Round((0.2 / coveted.Count()) * 100, 2);
-                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.09 / coveted.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.2 / coveted.Count()) * 100), 2}% in the premium box.");
-                }
-            }
-            Monitor.Log("--- Legendary Items - 1% Basic/5% Premium ---");
-            foreach (int index in legendary)
-            {
-                if (objectData.TryGetValue(index, out string entry))
-                {
-                    string[] fields = entry.Split('/');
-                    string name = fields[0];
-                    totalPercentageBasic += Math.Round((0.01 / legendary.Count()) * 100, 2);
-                    totalPercentagePremium += Math.Round((0.05 / legendary.Count()) * 100, 2);
-                    this.Monitor.Log($"ID {index} is a {name}. Drops {Math.Round((0.01 / legendary.Count()) * 100, 2)}% of the time in a basic box and a {Math.Round((0.05 / legendary.Count()) * 100, 2)}% in the premium box.");
-                }
-            }
-            Monitor.Log($"--- Basic: {Math.Round(totalPercentageBasic, 2)}% | Premium: {Math.Round(totalPercentagePremium, 2)}% | Both should be 100% (Or close to it)");
         }
 
         private void AfterSaveLoaded(object sender, EventArgs args)
@@ -253,8 +261,6 @@ namespace PrairieKingPrizes
             if (totalTokens >= 10)
             {
                 totalTokens -= 10;
-                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.TotalTokens = totalTokens;
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
                 Game1.playSound("purchase");
 
@@ -325,8 +331,6 @@ namespace PrairieKingPrizes
             if (totalTokens >= 50)
             {
                 totalTokens -= 50;
-                var savedData = this.Helper.ReadJsonFile<SavedData>($"data/{Constants.SaveFolderName}.json") ?? new SavedData();
-                savedData.TotalTokens = totalTokens;
                 Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {totalTokens}.", 2));
                 Game1.playSound("purchase");
 

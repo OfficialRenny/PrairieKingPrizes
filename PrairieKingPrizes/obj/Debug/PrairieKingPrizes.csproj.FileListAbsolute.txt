@@ -8,3 +8,4 @@ C:\Users\Renaldas\Documents\My Stardew Mods\PrairieKingPrizes\PrairieKingPrizes\
 C:\Users\Renaldas\Documents\My Stardew Mods\PrairieKingPrizes\PrairieKingPrizes\obj\Debug\PrairieKingPrizes.csproj.CoreCompileInputs.cache
 C:\Users\Renaldas\Documents\My Stardew Mods\PrairieKingPrizes\PrairieKingPrizes\obj\Debug\PrairieKingPrizes.dll
 C:\Users\Renaldas\Documents\My Stardew Mods\PrairieKingPrizes\PrairieKingPrizes\obj\Debug\PrairieKingPrizes.pdb
+C:\Users\Renaldas\Documents\My Stardew Mods\PrairieKingPrizes\PrairieKingPrizes\obj\Debug\PrairieKingPrizes.csprojAssemblyReference.cache
