@@ -1,4 +1,4 @@
-﻿namespace PrairieKingPrizes.Framework
+﻿namespace PrairieKingPrizes.Framework.Config
 {
     internal class SavedData
     {
