@@ -18,26 +18,31 @@
                 {
                     new PrizeTier
                     {
+                        Name = "Common",
                         Chance = 0.4,
                         Prizes = Defaults.DefaultCommonItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Uncommon",
                         Chance = 0.3,
                         Prizes = Defaults.DefaultUncommonItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Rare",
                         Chance = 0.2,
                         Prizes = Defaults.DefaultRareItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Coveted",
                         Chance = 0.099,
                         Prizes = Defaults.DefaultCovetedItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Legendary",
                         Chance = 0.001,
                         Prizes = Defaults.DefaultLegendaryItems,
                     }
@@ -52,27 +57,32 @@
                 {
                     new PrizeTier
                     {
+                        Name = "Common",
                         Chance = 0.2,
                         Prizes = Defaults.DefaultCommonItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Uncommon",
                         Chance = 0.25,
                         Prizes = Defaults.DefaultUncommonItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Rare",
                         Chance = 0.30,
                         Prizes = Defaults.DefaultRareItems,
                     },
                     new PrizeTier
                     {
+                        Name = "Coveted",
                         Chance = 0.24,
                         Prizes = Defaults.DefaultCovetedItems,
                     },
                     new PrizeTier
                     {
-                        Chance = 0.1,
+                        Name = "Legendary",
+                        Chance = 0.01,
                         Prizes = Defaults.DefaultLegendaryItems,
                     }
                 },

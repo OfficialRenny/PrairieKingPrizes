@@ -22,5 +22,10 @@ namespace PrairieKingPrizes.Framework
 
             return prizeTiers.Last();
         }
+
+        internal static Prize PickPrize(this Random random, PrizeTier prizeTier)
+        {
+            return prizeTier.Prizes[random.Next(prizeTier.Prizes.Length)];
+        } 
     }
 }

@@ -38,6 +38,9 @@ namespace PrairieKingPrizes
 
             //Custom Commands
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", GetCoins);
+            helper.ConsoleCommands.Add("addtokens", "Adds a specified amount of tokens to your total.", AddCoins);
+            helper.ConsoleCommands.Add("settokens", "Sets your total amount of tokens to a specified amount.", SetCoins);
+            helper.ConsoleCommands.Add("lootbox", "Lootbox helpers.", LootboxCommands);
             helper.ConsoleCommands.Add("orange", "Debug stuff, outputs a list of all items in the loot pool. Needs 3 special words in order to activate.", OrangeMonkeyEagle);
             
         }
@@ -52,7 +55,119 @@ namespace PrairieKingPrizes
 
         private void GetCoins(string command, string[] args)
         {
-            Monitor.Log($"You currently have {_totalTokens} coins.");
+            Monitor.Log($"You currently have {_totalTokens} coins.", LogLevel.Info);
+        }
+
+        private void AddCoins(string command, string[] args)
+        {
+            if (int.TryParse(args[0], out int amount))
+            {
+                _totalTokens += amount;
+                Monitor.Log($"You now have {_totalTokens} coins.", LogLevel.Info);
+            }
+            else
+            {
+                Monitor.Log("Invalid Arguments", LogLevel.Warn);
+            }
+        }
+
+        private void SetCoins(string command, string[] args)
+        {
+            if (int.TryParse(args[0], out int amount))
+            {
+                _totalTokens = amount;
+                Monitor.Log($"You now have {_totalTokens} coins.", LogLevel.Info);
+            }
+            else
+            {
+                Monitor.Log("Invalid Arguments", LogLevel.Warn);
+            }
+        }
+
+        private void LootboxCommands(string command, string[] args)
+        {
+            if (!args.Any())
+            {
+                LootboxHelp();
+                return;
+            }
+
+            if (args.ElementAtOrDefault(0) == "list")
+            {
+                if (args.Length > 1)
+                {
+                    var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == args.ElementAtOrDefault(1).ToLower());
+                    if (lootbox == null) return;
+
+                    var prizeString = string.Join(", ", lootbox.PrizeTiers.Select(x => $"Chance: {x.Chance}\nPrizes: {string.Join("\n\t", x.Prizes.Select(y => $"- {y.Quantity}x {_objectData[y.ItemId].Split('/').FirstOrDefault()} ({y.ItemId})"))}"));
+                    Monitor.Log($"Lootbox: {lootbox.Name}\nCost: {lootbox.Cost}\nPrize Tiers: {prizeString}", LogLevel.Info);
+                }
+
+                var lootboxString = string.Join("\n", _config.Lootboxes.Select(x => $"Key: {x.Key} - Name: {x.Name} - Cost: {x.Cost}"));
+                Monitor.Log($"Lootboxes: \n{lootboxString}", LogLevel.Info);
+                return;
+            }
+
+            if (args.ElementAtOrDefault(0) == "simulate")
+            {
+                var key = args.ElementAtOrDefault(1);
+                if (key == null)
+                {
+                    LootboxHelp(); return;
+                }
+
+                var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == key.ToLower());
+                if (lootbox == null) return;
+
+                int times = 1;
+
+                if (args.ElementAtOrDefault(2) != null)
+                {
+                    int.TryParse(args.ElementAtOrDefault(2), out times);
+                    if (times < 1)
+                        times = 1;
+                }
+
+                Dictionary<Prize, int> prizes = new();
+                Dictionary<PrizeTier, int> chosenPrizeTiers = new();
+
+                var totalTierWeight = lootbox.PrizeTiers.Sum(x => x.Chance);
+
+                for (int i = 0; i < times; i++)
+                {
+                    var prizeTier = _random.PickPrizeTier(lootbox.PrizeTiers);
+                    if (chosenPrizeTiers.ContainsKey(prizeTier))
+                        chosenPrizeTiers[prizeTier]++;
+                    else
+                        chosenPrizeTiers.Add(prizeTier, 1);
+                    
+                    var prize = _random.PickPrize(prizeTier);
+                    if (prizes.ContainsKey(prize))
+                        prizes[prize]++;
+                    else
+                        prizes.Add(prize, 1);
+                }
+
+                var prizeString = string.Join("\n\t", prizes.OrderByDescending(x => x.Value).Select(x => $"- {x.Key.Quantity}x {_objectData[x.Key.ItemId].Split('/').FirstOrDefault()} ({x.Key.ItemId}, quality {x.Key.Quality ?? 0}, won {x.Value} times.)"));
+                Monitor.Log("You won:\n\t" + prizeString, LogLevel.Info);
+                var prizeTierString = string.Join("\n\t", chosenPrizeTiers.Select(x => $"- {x.Key.Name}: {x.Key.Chance / totalTierWeight * 100:0.#####}% - {x.Value} times, {x.Value / (double)times * 100:0.#####}% of attempts."));
+                Monitor.Log(prizeTierString, LogLevel.Info);
+
+                return;
+            }
+
+            LootboxHelp();
+            return;
+        }
+
+        private void LootboxHelp()
+        {
+            Monitor.Log(
+                        "Lootbox Commands:\n" +
+                        "list - Lists all lootboxes and their prizes.\n" +
+                        "simulate <key> <times> - Simulates opening a lootbox. <key> is the key of the lootbox you want to open. <times> is the amount of times you want to open the lootbox. Default is 1."
+                    , LogLevel.Info);
+            return;
         }
 
         private void OrangeMonkeyEagle(string command, string[] args)
@@ -63,29 +178,29 @@ namespace PrairieKingPrizes
                 {
                     foreach (var lootbox in _config.Lootboxes)
                     {
-                        Monitor.Log($"--- {lootbox.Name} - {lootbox.PrizeTiers.Length} Prize Tiers ---");
+                        Monitor.Log($"--- {lootbox.Name} - {lootbox.PrizeTiers.Length} Prize Tiers ---", LogLevel.Debug);
                         for (int i = 0; i < lootbox.PrizeTiers.Length; i++)
                         {
                             var prizeTier = lootbox.PrizeTiers[i];
-                            Monitor.Log($"--- #{i} Prize Tier - Chance/Weight: {prizeTier.Chance} ---");
+                            Monitor.Log($"--- #{i} Prize Tier - Chance/Weight: {prizeTier.Chance} ---", LogLevel.Debug);
                             foreach (var item in prizeTier.Prizes)
                             {
                                 if (_objectData.TryGetValue(item.ItemId, out string entry))
                                 {
                                     string[] fields = entry.Split('/');
                                     string name = fields[0];
-                                    Monitor.Log($"Prize ID {item.ItemId} gives you a {item.Quantity}x {name}.");
+                                    Monitor.Log($"Prize ID {item.ItemId} gives you a {item.Quantity}x {name}.", LogLevel.Debug);
                                 }
                             }
-                            Monitor.Log($"--- End of Prize Tier #{i} ---");
+                            Monitor.Log($"--- End of Prize Tier #{i} ---", LogLevel.Debug);
                         }
-                        Monitor.Log($"--- End of {lootbox.Name} ---");
+                        Monitor.Log($"--- End of {lootbox.Name} ---", LogLevel.Debug);
                     }
                 }
             }
             else
             {
-                Monitor.Log("Invalid Arguments");
+                Monitor.Log("Invalid Arguments", LogLevel.Warn);
             }
         }
 
@@ -129,11 +244,7 @@ namespace PrairieKingPrizes
         {
             if (Context.IsPlayerFree && e.Button.IsActionButton())
             {
-                Vector2 grabTile = new Vector2(Game1.getOldMouseX() + Game1.viewport.X, Game1.getOldMouseY() + Game1.viewport.Y) / Game1.tileSize;
-                if (!Utility.tileWithinRadiusOfPlayer((int)grabTile.X, (int)grabTile.Y, 1, Game1.player))
-                {
-                    grabTile = Game1.player.GetGrabTile();
-                }
+                var grabTile = e.Cursor.GrabTile;
                 Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
                 xTile.ObjectModel.PropertyValue propertyValue = null;
                 tile?.Properties.TryGetValue("Action", out propertyValue);
@@ -144,6 +255,7 @@ namespace PrairieKingPrizes
                         List<Response> responses = new List<Response>();
                         responses.AddRange(
                             _config.Lootboxes
+                            .OrderBy(x => x.Cost)
                             .Select(x => new Response(x.Key, $"{x.Name} ({x.Cost} Tokens)"))
                         );
                         responses.Add(new Response("Cancel", "Cancel"));
@@ -164,8 +276,9 @@ namespace PrairieKingPrizes
             if (lootbox.Cost > _totalTokens)
             {
                 Game1.addHUDMessage(new HUDMessage("You do not have enough Tokens.", 3));
-                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {_totalTokens}.", 2));
+                //Game1.addHUDMessage(new HUDMessage($"Your current Token balance is {_totalTokens}.", 2));
                 Game1.playSound("cancel");
+                return;
             }
 
             GivePlayerItem(lootbox);
@@ -195,35 +308,25 @@ namespace PrairieKingPrizes
             }
         }
 
-        private void GivePlayerItem(Lootbox lootbox)
+        private void GivePlayerItem(Lootbox lootbox, bool isFree = false)
         {
             var prizeTier = _random.PickPrizeTier(lootbox.PrizeTiers);
             if (prizeTier == null)
                 return;
 
-            var prize = prizeTier.Prizes[_random.Next(prizeTier.Prizes.Length)];
-
+            var prize = _random.PickPrize(prizeTier);
             if (prize == null)
                 return;
 
-            _totalTokens -= lootbox.Cost;
-            Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {_totalTokens}.", 2));
+            if (!isFree)
+            {
+                _totalTokens -= lootbox.Cost;
+                Game1.addHUDMessage(new HUDMessage($"Your current Token balance is now {_totalTokens}.", 2));
+            }
+
             Game1.playSound("purchase");
 
             Game1.player.addItemByMenuIfNecessary(new StardewValley.Object(prize.ItemId, prize.Quantity, quality: prize.Quality ?? 0));
         }
-
-        //Secrets - Basic Item
-        //    Common - 40% | Quantity: 5
-        //    Uncommon - 30% | Quantity: 3
-        //    Rare - 20% | Quantity: 2
-        //    Coveted - 9.9% | Quantity: 1
-        //    Legendary - 0.1% | Quantity: 1
-        //Secrets - Premium Item
-        //    Common - 20% | Quantity: 25
-        //    Uncommon - 25% | Quantity: 15
-        //    Rare - 30% | Quantity: 10
-        //    Coveted - 24% | Quantity: 5
-        //    Legendary - 1% | Quantity: 2
     }
 }
