@@ -40,9 +40,7 @@ namespace PrairieKingPrizes
             helper.ConsoleCommands.Add("gettokens", "Retrieves the value of your current amount of tokens.", GetCoins);
             helper.ConsoleCommands.Add("addtokens", "Adds a specified amount of tokens to your total.", AddCoins);
             helper.ConsoleCommands.Add("settokens", "Sets your total amount of tokens to a specified amount.", SetCoins);
-            helper.ConsoleCommands.Add("lootbox", "Lootbox helpers.", LootboxCommands);
-            helper.ConsoleCommands.Add("orange", "Debug stuff, outputs a list of all items in the loot pool. Needs 3 special words in order to activate.", OrangeMonkeyEagle);
-            
+            helper.ConsoleCommands.Add("lootbox", "Lootbox helpers.", LootboxCommands);            
         }
 
         private void Asset_Ready(object sender, AssetReadyEventArgs e)
@@ -55,7 +53,7 @@ namespace PrairieKingPrizes
 
         private void GetCoins(string command, string[] args)
         {
-            Monitor.Log($"You currently have {_totalTokens} coins.", LogLevel.Info);
+            Monitor.Log($"You currently have {_totalTokens} tokens.", LogLevel.Info);
         }
 
         private void AddCoins(string command, string[] args)
@@ -63,7 +61,7 @@ namespace PrairieKingPrizes
             if (int.TryParse(args[0], out int amount))
             {
                 _totalTokens += amount;
-                Monitor.Log($"You now have {_totalTokens} coins.", LogLevel.Info);
+                Monitor.Log($"You now have {_totalTokens} tokens.", LogLevel.Info);
             }
             else
             {
@@ -76,7 +74,7 @@ namespace PrairieKingPrizes
             if (int.TryParse(args[0], out int amount))
             {
                 _totalTokens = amount;
-                Monitor.Log($"You now have {_totalTokens} coins.", LogLevel.Info);
+                Monitor.Log($"You now have {_totalTokens} tokens.", LogLevel.Info);
             }
             else
             {
@@ -99,7 +97,7 @@ namespace PrairieKingPrizes
                     var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == args.ElementAtOrDefault(1).ToLower());
                     if (lootbox == null) return;
 
-                    var prizeString = string.Join(", ", lootbox.PrizeTiers.Select(x => $"Chance: {x.Chance}\nPrizes: {string.Join("\n\t", x.Prizes.Select(y => $"- {y.Quantity}x {_objectData[y.ItemId].Split('/').FirstOrDefault()} ({y.ItemId})"))}"));
+                    var prizeString = string.Join("\n", lootbox.PrizeTiers.Select(x => $"Name: {x.Name}\nChance: {x.Chance}\nPrizes:\n{string.Join("\n\t", x.Prizes.Select(y => $"- {y.Quantity}x {_objectData[y.ItemId].Split('/').FirstOrDefault()} ({y.ItemId})"))}"));
                     Monitor.Log($"Lootbox: {lootbox.Name}\nCost: {lootbox.Cost}\nPrize Tiers: {prizeString}", LogLevel.Info);
                 }
 
@@ -168,40 +166,6 @@ namespace PrairieKingPrizes
                         "simulate <key> <times> - Simulates opening a lootbox. <key> is the key of the lootbox you want to open. <times> is the amount of times you want to open the lootbox. Default is 1."
                     , LogLevel.Info);
             return;
-        }
-
-        private void OrangeMonkeyEagle(string command, string[] args)
-        {
-            if (args.Length == 2)
-            {
-                if (args[0].ToLower() == "monkey" && args[1].ToLower() == "eagle")
-                {
-                    foreach (var lootbox in _config.Lootboxes)
-                    {
-                        Monitor.Log($"--- {lootbox.Name} - {lootbox.PrizeTiers.Length} Prize Tiers ---", LogLevel.Debug);
-                        for (int i = 0; i < lootbox.PrizeTiers.Length; i++)
-                        {
-                            var prizeTier = lootbox.PrizeTiers[i];
-                            Monitor.Log($"--- #{i} Prize Tier - Chance/Weight: {prizeTier.Chance} ---", LogLevel.Debug);
-                            foreach (var item in prizeTier.Prizes)
-                            {
-                                if (_objectData.TryGetValue(item.ItemId, out string entry))
-                                {
-                                    string[] fields = entry.Split('/');
-                                    string name = fields[0];
-                                    Monitor.Log($"Prize ID {item.ItemId} gives you a {item.Quantity}x {name}.", LogLevel.Debug);
-                                }
-                            }
-                            Monitor.Log($"--- End of Prize Tier #{i} ---", LogLevel.Debug);
-                        }
-                        Monitor.Log($"--- End of {lootbox.Name} ---", LogLevel.Debug);
-                    }
-                }
-            }
-            else
-            {
-                Monitor.Log("Invalid Arguments", LogLevel.Warn);
-            }
         }
 
         private void AfterSaveLoaded(object sender, SaveLoadedEventArgs args)
@@ -326,7 +290,7 @@ namespace PrairieKingPrizes
 
             Game1.playSound("purchase");
 
-            Game1.player.addItemByMenuIfNecessary(new StardewValley.Object(prize.ItemId, prize.Quantity, quality: prize.Quality ?? 0));
+            Game1.player.addItemByMenuIfNecessary(new StardewValley.Object(prize.ItemId, prize.Quantity, quality: prize.Quality ?? StardewValley.Object.lowQuality));
         }
     }
 }
