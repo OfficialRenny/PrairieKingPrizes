@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
@@ -9,7 +8,7 @@ using PrairieKingPrizes.Framework.Config;
 using xTile.Layers;
 using xTile.Tiles;
 using System.Linq;
-using Microsoft.Xna.Framework.Graphics;
+using StardewValley.GameData.Objects;
 
 namespace PrairieKingPrizes
 {
@@ -20,7 +19,7 @@ namespace PrairieKingPrizes
         private object _lastMinigame;
         private ModConfig _config;
         private Random _random;
-        IDictionary<int, string> _objectData;
+        private IDictionary<string, ObjectData> _objectData;
 
         public override void Entry(IModHelper helper)
         {
@@ -45,9 +44,9 @@ namespace PrairieKingPrizes
 
         private void Asset_Ready(object sender, AssetReadyEventArgs e)
         {
-            if (e.NameWithoutLocale.BaseName == "Data/ObjectInformation")
+            if (e.NameWithoutLocale.IsEquivalentTo("Data/Objects"))
             {
-                _objectData = Helper.GameContent.Load<Dictionary<int, string>>(e.NameWithoutLocale);
+                _objectData = Helper.GameContent.Load<Dictionary<string, ObjectData>>(e.NameWithoutLocale);
             }
         }
 
@@ -94,10 +93,11 @@ namespace PrairieKingPrizes
             {
                 if (args.Length > 1)
                 {
-                    var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == args.ElementAtOrDefault(1).ToLower());
-                    if (lootbox == null) return;
+                    var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == args.ElementAtOrDefault(1)?.ToLower());
+                    if (lootbox == null)
+                        return;
 
-                    var prizeString = string.Join("\n", lootbox.PrizeTiers.Select(x => $"Name: {x.Name}\nChance: {x.Chance}\nPrizes:\n{string.Join("\n\t", x.Prizes.Select(y => $"- {y.Quantity}x {_objectData[y.ItemId].Split('/').FirstOrDefault()} ({y.ItemId})"))}"));
+                    var prizeString = string.Join("\n", lootbox.PrizeTiers.Select(x => $"Name: {x.Name}\nChance: {x.Chance}\nPrizes:\n{string.Join("\n\t", x.Prizes.Select(y => $"- {y.Quantity}x {_objectData[y.ItemId]?.Name} ({y.ItemId})"))}"));
                     Monitor.Log($"Lootbox: {lootbox.Name}\nCost: {lootbox.Cost}\nPrize Tiers: {prizeString}", LogLevel.Info);
                 }
 
@@ -111,11 +111,13 @@ namespace PrairieKingPrizes
                 var key = args.ElementAtOrDefault(1);
                 if (key == null)
                 {
-                    LootboxHelp(); return;
+                    LootboxHelp(); 
+                    return;
                 }
 
                 var lootbox = _config.Lootboxes.FirstOrDefault(x => x.Key.ToLower() == key.ToLower());
-                if (lootbox == null) return;
+                if (lootbox == null)
+                    return;
 
                 int times = 1;
 
@@ -145,9 +147,15 @@ namespace PrairieKingPrizes
                     else
                         prizes.Add(prize, 1);
                 }
-
-                var prizeString = string.Join("\n\t", prizes.OrderByDescending(x => x.Value).Select(x => $"- {x.Key.Quantity}x {_objectData[x.Key.ItemId].Split('/').FirstOrDefault()} ({x.Key.ItemId}, quality {x.Key.Quality ?? 0}, won {x.Value} times.)"));
+                
+                var prizeString = 
+                    string.Join("\n\t", 
+                        prizes
+                            .OrderByDescending(x => x.Value)
+                            .Select(x => $"- {x.Key.Quantity}x {_objectData[x.Key.ItemId]?.Name} ({x.Key.ItemId}, quality {x.Key.Quality ?? 0}, won {x.Value} times.)"));
+                
                 Monitor.Log("You won:\n\t" + prizeString, LogLevel.Info);
+                
                 var prizeTierString = string.Join("\n\t", chosenPrizeTiers.Select(x => $"- {x.Key.Name}: {x.Key.Chance / totalTierWeight * 100:0.#####}% - {x.Value} times, {x.Value / (double)times * 100:0.#####}% of attempts."));
                 Monitor.Log(prizeTierString, LogLevel.Info);
 
@@ -155,7 +163,6 @@ namespace PrairieKingPrizes
             }
 
             LootboxHelp();
-            return;
         }
 
         private void LootboxHelp()
@@ -165,7 +172,6 @@ namespace PrairieKingPrizes
                         "list - Lists all lootboxes and their prizes.\n" +
                         "simulate <key> <times> - Simulates opening a lootbox. <key> is the key of the lootbox you want to open. <times> is the amount of times you want to open the lootbox. Default is 1."
                     , LogLevel.Info);
-            return;
         }
 
         private void AfterSaveLoaded(object sender, SaveLoadedEventArgs args)
@@ -206,28 +212,28 @@ namespace PrairieKingPrizes
 
         private void CheckAction(object sender, ButtonPressedEventArgs e)
         {
-            if (Context.IsPlayerFree && e.Button.IsActionButton())
-            {
-                var grabTile = e.Cursor.GrabTile;
-                Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
-                xTile.ObjectModel.PropertyValue propertyValue = null;
-                tile?.Properties.TryGetValue("Action", out propertyValue);
-                if (propertyValue != null)
-                {
-                    if (propertyValue == "TokenMachine")
-                    {
-                        List<Response> responses = new List<Response>();
-                        responses.AddRange(
-                            _config.Lootboxes
-                            .OrderBy(x => x.Cost)
-                            .Select(x => new Response(x.Key, $"{x.Name} ({x.Cost} Tokens)"))
-                        );
-                        responses.Add(new Response("Cancel", "Cancel"));
+            if (!Context.IsPlayerFree || !e.Button.IsActionButton())
+                return;
+            
+            var grabTile = e.Cursor.GrabTile;
+            Tile tile = Game1.currentLocation.map.GetLayer("Buildings").PickTile(new xTile.Dimensions.Location((int)grabTile.X * Game1.tileSize, (int)grabTile.Y * Game1.tileSize), Game1.viewport.Size);
+            xTile.ObjectModel.PropertyValue propertyValue = null;
+            tile?.Properties.TryGetValue("Action", out propertyValue);
+            if (propertyValue == null)
+                return;
 
-                        Game1.player.currentLocation.createQuestionDialogue($"Would you like to spend your tokens to receive a random item? You currently have {_totalTokens} tokens.", responses.ToArray(), AfterQuestion);
-                    }
-                }
-            }
+            if (propertyValue != "TokenMachine")
+                return;
+            
+            List<Response> responses = new List<Response>();
+            responses.AddRange(
+                _config.Lootboxes
+                    .OrderBy(x => x.Cost)
+                    .Select(x => new Response(x.Key, $"{x.Name} ({x.Cost} Tokens)"))
+            );
+            responses.Add(new Response("Cancel", "Cancel"));
+
+            Game1.player.currentLocation.createQuestionDialogue($"Would you like to spend your tokens to receive a random item? You currently have {_totalTokens} tokens.", responses.ToArray(), AfterQuestion);
         }
 
         private void AfterQuestion(Farmer who, string whichAnswer)
@@ -248,14 +254,16 @@ namespace PrairieKingPrizes
             GivePlayerItem(lootbox);
         }
 
-        int _coinStorage;
+        private int _coinStorage;
         private void GameEvents_UpdateTick(object sender, EventArgs e)
         {
-            if (_config.RequireGameCompletion && !Game1.player.mailReceived.Contains("Beat_PK")) return;
+            if (_config.RequireGameCompletion && !Game1.player.mailReceived.Contains("Beat_PK"))
+                return;
+            
             if (Game1.currentMinigame != null && "AbigailGame".Equals(Game1.currentMinigame.GetType().Name))
             {
                 Type minigameType = Game1.currentMinigame.GetType();
-                _coinsCollected = Convert.ToInt32(minigameType.GetField("coins").GetValue(Game1.currentMinigame));
+                _coinsCollected = Convert.ToInt32(minigameType.GetField("coins")?.GetValue(Game1.currentMinigame));
                 if (_config.AlternateCoinMethod) {
                     if (_coinsCollected > _coinStorage) _coinStorage = _coinsCollected;
                 } else {
